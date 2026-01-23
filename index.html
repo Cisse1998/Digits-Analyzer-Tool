@@ -1051,7 +1051,7 @@
         // Chart constants
         const MIN_VISIBLE_CANDLES = 20;
         const ZOOM_STEP = 0.2;
-        const CHART_MARGIN = { top: 20, right: 50, left: 20, bottom: 20 };
+        const CHART_MARGIN = { top: 20, right: 50, left: 60, bottom: 20 };
         const DRAWING_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
         // ======================
@@ -1387,8 +1387,9 @@
         function updateChartWithTick(tick) {
             const candleEpoch = Math.floor(tick.epoch / activeTimeframe) * activeTimeframe;
             
-            if (candles.length === 0 || candles[0].epoch !== candleEpoch) {
-                // Create new candle
+            // Check if we have candles, and find the latest one
+            if (candles.length === 0) {
+                // First candle - add to end (right side)
                 const newCandle = {
                     open: tick.quote,
                     high: tick.quote,
@@ -1397,16 +1398,33 @@
                     epoch: candleEpoch,
                     symbol: activeSymbol
                 };
-                candles.unshift(newCandle);
-                if (candles.length > 100) {
-                    candles.pop();
-                }
+                candles.push(newCandle); // PUSH to end (right side)
             } else {
-                // Update existing candle
-                const currentCandle = candles[0];
-                currentCandle.high = Math.max(currentCandle.high, tick.quote);
-                currentCandle.low = Math.min(currentCandle.low, tick.quote);
-                currentCandle.close = tick.quote;
+                // Get the most recent candle (last in array since we push to end)
+                const currentCandle = candles[candles.length - 1];
+                
+                if (currentCandle.epoch === candleEpoch) {
+                    // Update existing candle - update the rightmost candle
+                    currentCandle.high = Math.max(currentCandle.high, tick.quote);
+                    currentCandle.low = Math.min(currentCandle.low, tick.quote);
+                    currentCandle.close = tick.quote;
+                } else {
+                    // New candle period - add to end (right side)
+                    const newCandle = {
+                        open: tick.quote,
+                        high: tick.quote,
+                        low: tick.quote,
+                        close: tick.quote,
+                        epoch: candleEpoch,
+                        symbol: activeSymbol
+                    };
+                    candles.push(newCandle); // PUSH to end (right side)
+                    
+                    // Keep array size manageable
+                    if (candles.length > 200) {
+                        candles.shift(); // Remove from beginning (left side)
+                    }
+                }
             }
             
             drawChart();
@@ -1418,6 +1436,7 @@
         function handleCandleData(candlesData) {
             if (!candlesData || !candlesData.length) return;
             
+            // Convert candles to array with oldest first (left side)
             const newCandles = candlesData.map(candle => ({
                 open: parseFloat(candle.open),
                 high: parseFloat(candle.high),
@@ -1427,10 +1446,10 @@
                 symbol: activeSymbol
             }));
             
-            candles = newCandles;
+            candles = newCandles; // Candles are in chronological order (oldest first)
             
             if (candles.length > 0) {
-                currentPrice = candles[0].close;
+                currentPrice = candles[candles.length - 1].close; // Latest candle is last
                 updatePriceDisplay();
             }
             
@@ -1453,7 +1472,7 @@
             updatePriceDisplay();
             
             if (candles.length > 0) {
-                const lastCandle = candles[0];
+                const lastCandle = candles[candles.length - 1]; // Get the latest candle (rightmost)
                 lastCandle.close = currentPrice;
                 lastCandle.high = Math.max(lastCandle.high, currentPrice);
                 lastCandle.low = Math.min(lastCandle.low, currentPrice);
@@ -1492,13 +1511,14 @@
             const basePrice = symbolInfo.basePrice;
             
             candles = [];
-            for (let i = 100; i >= 0; i--) {
+            // Generate candles with oldest first (left side)
+            for (let i = 0; i < 100; i++) {
                 const timeOffset = i * activeTimeframe;
-                const candleTime = now - timeOffset;
+                const candleTime = now - (100 - i) * activeTimeframe;
                 
                 // Generate more realistic price movements
                 const volatility = getVolatilityForSymbol(activeSymbol);
-                const prevClose = i < 100 ? candles[candles.length - 1].close : basePrice;
+                const prevClose = i > 0 ? candles[i - 1].close : basePrice;
                 const change = (Math.random() - 0.5) * volatility * 2;
                 const close = prevClose * (1 + change/100);
                 const open = prevClose;
@@ -1515,7 +1535,7 @@
                 });
             }
             
-            currentPrice = candles[0].close;
+            currentPrice = candles.length > 0 ? candles[candles.length - 1].close : basePrice;
             
             drawChart();
             drawOverlay();
@@ -1565,22 +1585,30 @@
             
             const currentPeriod = Math.floor(newTick.epoch / activeTimeframe) * activeTimeframe;
             
-            if (candles.length > 0 && currentPeriod === candles[0].epoch) {
-                candles[0].close = currentPrice;
-                candles[0].high = Math.max(candles[0].high, currentPrice);
-                candles[0].low = Math.min(candles[0].low, currentPrice);
-            } else {
-                const newCandle = {
-                    epoch: currentPeriod,
-                    open: currentPrice,
-                    high: currentPrice,
-                    low: currentPrice,
-                    close: currentPrice,
-                    symbol: activeSymbol
-                };
-                candles.unshift(newCandle);
-                if (candles.length > 100) {
-                    candles.pop();
+            if (candles.length > 0) {
+                const latestCandle = candles[candles.length - 1];
+                
+                if (currentPeriod === latestCandle.epoch) {
+                    // Update existing candle
+                    latestCandle.close = currentPrice;
+                    latestCandle.high = Math.max(latestCandle.high, currentPrice);
+                    latestCandle.low = Math.min(latestCandle.low, currentPrice);
+                } else {
+                    // Create new candle at the end (right side)
+                    const newCandle = {
+                        epoch: currentPeriod,
+                        open: currentPrice,
+                        high: currentPrice,
+                        low: currentPrice,
+                        close: currentPrice,
+                        symbol: activeSymbol
+                    };
+                    candles.push(newCandle);
+                    
+                    // Keep array size manageable
+                    if (candles.length > 200) {
+                        candles.shift(); // Remove from beginning (left side)
+                    }
                 }
             }
             
@@ -1609,13 +1637,14 @@
                 return;
             }
             
-            // Calculate visible range
+            // Calculate visible range - we want to show newest candles on right
             const totalCandles = candles.length;
             const visibleCount = Math.max(MIN_VISIBLE_CANDLES, Math.floor(totalCandles / zoomLevel));
             const maxOffset = Math.max(0, totalCandles - visibleCount);
             const clampedOffset = Math.min(Math.max(0, panOffset), maxOffset);
             
-            const startIndex = Math.floor(clampedOffset);
+            // We want to show from startIndex to end, with newest on right
+            const startIndex = clampedOffset;
             const endIndex = Math.min(startIndex + visibleCount, totalCandles);
             const visibleCandlesData = candles.slice(startIndex, endIndex);
             
@@ -1656,6 +1685,9 @@
             
             // Draw price labels
             drawPriceLabels(priceRange);
+            
+            // Draw time labels
+            drawTimeLabels(visibleCandlesData);
         }
 
         function drawLoadingMessage() {
@@ -1719,20 +1751,67 @@
                 ctx.lineTo(chartWidth - CHART_MARGIN.right, y);
                 ctx.stroke();
             }
+            
+            // Vertical grid lines
+            const chartWidthAdj = chartWidth - CHART_MARGIN.left - CHART_MARGIN.right;
+            for (let i = 0; i <= 5; i++) {
+                const x = CHART_MARGIN.left + (chartWidthAdj * i / 5);
+                ctx.beginPath();
+                ctx.moveTo(x, CHART_MARGIN.top);
+                ctx.lineTo(x, chartHeight - CHART_MARGIN.bottom);
+                ctx.stroke();
+            }
         }
 
         function drawPriceLabels(minPrice, maxPrice) {
             const chartHeightAdj = chartHeight - CHART_MARGIN.top - CHART_MARGIN.bottom;
-            const pixelPerPrice = chartHeightAdj / (maxPrice - minPrice);
             
             ctx.fillStyle = document.body.classList.contains('light-mode') ? '#64748b' : '#9ca3af';
-            ctx.font = '10px Arial';
-            ctx.textAlign = 'right';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'left';
             
             for (let i = 0; i <= 5; i++) {
                 const y = CHART_MARGIN.top + (chartHeightAdj * i / 5);
                 const price = maxPrice - ((maxPrice - minPrice) * i / 5);
-                ctx.fillText(price.toFixed(2), chartWidth - 5, y + 3);
+                ctx.fillText(price.toFixed(2), 5, y + 4);
+            }
+        }
+
+        function drawTimeLabels(visibleCandles) {
+            if (visibleCandles.length < 2) return;
+            
+            const chartWidthAdj = chartWidth - CHART_MARGIN.left - CHART_MARGIN.right;
+            ctx.fillStyle = document.body.classList.contains('light-mode') ? '#64748b' : '#9ca3af';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            
+            // Show time at the bottom
+            const y = chartHeight - 5;
+            
+            // Show first, middle, and last candle times
+            const indices = [0, Math.floor(visibleCandles.length / 2), visibleCandles.length - 1];
+            
+            indices.forEach(index => {
+                if (index < visibleCandles.length) {
+                    const candle = visibleCandles[index];
+                    const x = CHART_MARGIN.left + (index * chartWidthAdj) / Math.max(1, visibleCandles.length - 1);
+                    const date = new Date(candle.epoch * 1000);
+                    const timeStr = formatTime(date, activeTimeframe);
+                    ctx.fillText(timeStr, x, y);
+                }
+            });
+        }
+
+        function formatTime(date, timeframe) {
+            if (timeframe <= 60) {
+                // Show minutes:seconds for short timeframes
+                return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+            } else if (timeframe <= 3600) {
+                // Show hours:minutes for hourly timeframes
+                return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+            } else {
+                // Show date for daily+ timeframes
+                return `${date.getDate()}/${date.getMonth() + 1} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
             }
         }
 
@@ -1815,7 +1894,7 @@
             ctx.stroke();
             ctx.setLineDash([]);
             
-            // Price label
+            // Price label on the right
             ctx.fillStyle = '#3b82f6';
             ctx.font = '11px Arial';
             ctx.textAlign = 'right';
@@ -1825,26 +1904,25 @@
         // ======================
         // INDICATOR CALCULATIONS
         // ======================
-        function calculateSMA(candle, period = 20) {
-            const index = candles.indexOf(candle);
-            if (index < period - 1 || index >= candles.length) return null;
+        function calculateSMA(candleIndex, period = 20) {
+            if (candleIndex < period - 1 || candleIndex >= candles.length) return null;
             
             let sum = 0;
             for (let i = 0; i < period; i++) {
-                if (index - i < 0) break;
-                sum += candles[index - i].close;
+                const idx = candleIndex - i;
+                if (idx < 0) break;
+                sum += candles[idx].close;
             }
-            return sum / Math.min(period, index + 1);
+            return sum / Math.min(period, candleIndex + 1);
         }
 
-        function calculateEMA(candle, period = 20) {
-            const index = candles.indexOf(candle);
-            if (index < period - 1 || index >= candles.length) return null;
+        function calculateEMA(candleIndex, period = 20) {
+            if (candleIndex < period - 1 || candleIndex >= candles.length) return null;
             
             const multiplier = 2 / (period + 1);
-            let ema = calculateSMA(candles[Math.max(0, index - period + 1)], period);
+            let ema = calculateSMA(Math.max(0, candleIndex - period + 1), period);
             
-            for (let i = Math.max(0, index - period + 1); i <= index; i++) {
+            for (let i = Math.max(0, candleIndex - period + 1); i <= candleIndex; i++) {
                 if (i < 0) continue;
                 ema = (candles[i].close - ema) * multiplier + ema;
             }
@@ -1852,9 +1930,8 @@
             return ema;
         }
 
-        function calculateALMA(candle) {
-            const index = candles.indexOf(candle);
-            if (index < 8 || index >= candles.length) return null;
+        function calculateALMA(candleIndex) {
+            if (candleIndex < 8 || candleIndex >= candles.length) return null;
             
             const offset = 0.85;
             const sigma = 6;
@@ -1863,8 +1940,9 @@
             let weightSum = 0;
             
             for (let i = 0; i < 9; i++) {
-                if (index - i < 0) continue;
-                const price = candles[index - i].close;
+                const idx = candleIndex - i;
+                if (idx < 0) continue;
+                const price = candles[idx].close;
                 const weight = Math.exp(-Math.pow(i - offset * (9 - 1), 2) / (2 * Math.pow(sigma, 2)));
                 sum += price * weight;
                 weightSum += weight;
@@ -1873,21 +1951,22 @@
             return weightSum > 0 ? sum / weightSum : null;
         }
 
-        function calculateBollingerBands(candle, period = 20) {
-            const index = candles.indexOf(candle);
-            if (index < period - 1 || index >= candles.length) return null;
+        function calculateBollingerBands(candleIndex, period = 20) {
+            if (candleIndex < period - 1 || candleIndex >= candles.length) return null;
             
             let sum = 0;
             for (let i = 0; i < period; i++) {
-                if (index - i < 0) continue;
-                sum += candles[index - i].close;
+                const idx = candleIndex - i;
+                if (idx < 0) continue;
+                sum += candles[idx].close;
             }
             const middle = sum / period;
             
             let variance = 0;
             for (let i = 0; i < period; i++) {
-                if (index - i < 0) continue;
-                variance += Math.pow(candles[index - i].close - middle, 2);
+                const idx = candleIndex - i;
+                if (idx < 0) continue;
+                variance += Math.pow(candles[idx].close - middle, 2);
             }
             variance /= period;
             const std = Math.sqrt(variance);
@@ -1900,15 +1979,31 @@
         }
 
         function drawSMA(visibleCandles, priceRange) {
-            drawIndicatorLine(visibleCandles, priceRange, calculateSMA, '#f59e0b', 2);
+            drawIndicatorLine(visibleCandles, priceRange, (candle, index) => {
+                // Find the index of this candle in the full candles array
+                const candleEpoch = candle.epoch;
+                const fullIndex = candles.findIndex(c => c.epoch === candleEpoch);
+                if (fullIndex === -1) return null;
+                return calculateSMA(fullIndex);
+            }, '#f59e0b', 2);
         }
 
         function drawEMA(visibleCandles, priceRange) {
-            drawIndicatorLine(visibleCandles, priceRange, calculateEMA, '#10b981', 2);
+            drawIndicatorLine(visibleCandles, priceRange, (candle, index) => {
+                const candleEpoch = candle.epoch;
+                const fullIndex = candles.findIndex(c => c.epoch === candleEpoch);
+                if (fullIndex === -1) return null;
+                return calculateEMA(fullIndex);
+            }, '#10b981', 2);
         }
 
         function drawALMA(visibleCandles, priceRange) {
-            drawIndicatorLine(visibleCandles, priceRange, calculateALMA, '#ec4899', 2);
+            drawIndicatorLine(visibleCandles, priceRange, (candle, index) => {
+                const candleEpoch = candle.epoch;
+                const fullIndex = candles.findIndex(c => c.epoch === candleEpoch);
+                if (fullIndex === -1) return null;
+                return calculateALMA(fullIndex);
+            }, '#ec4899', 2);
         }
 
         function drawBollingerBandsArea(visibleCandles, priceRange) {
@@ -1925,7 +2020,11 @@
             
             // Upper band
             visibleCandles.forEach((candle, index) => {
-                const bb = calculateBollingerBands(candle);
+                const candleEpoch = candle.epoch;
+                const fullIndex = candles.findIndex(c => c.epoch === candleEpoch);
+                if (fullIndex === -1) return;
+                
+                const bb = calculateBollingerBands(fullIndex);
                 if (!bb) return;
                 
                 const x = CHART_MARGIN.left + (index * chartWidthAdj) / Math.max(1, visibleCandles.length - 1);
@@ -1941,7 +2040,11 @@
             // Lower band (reverse)
             for (let i = visibleCandles.length - 1; i >= 0; i--) {
                 const candle = visibleCandles[i];
-                const bb = calculateBollingerBands(candle);
+                const candleEpoch = candle.epoch;
+                const fullIndex = candles.findIndex(c => c.epoch === candleEpoch);
+                if (fullIndex === -1) continue;
+                
+                const bb = calculateBollingerBands(fullIndex);
                 if (!bb) continue;
                 
                 const x = CHART_MARGIN.left + (i * chartWidthAdj) / Math.max(1, visibleCandles.length - 1);
@@ -1954,18 +2057,27 @@
         }
 
         function drawBollingerBandsLines(visibleCandles, priceRange) {
-            drawIndicatorLine(visibleCandles, priceRange, (candle) => {
-                const bb = calculateBollingerBands(candle);
+            drawIndicatorLine(visibleCandles, priceRange, (candle, index) => {
+                const candleEpoch = candle.epoch;
+                const fullIndex = candles.findIndex(c => c.epoch === candleEpoch);
+                if (fullIndex === -1) return null;
+                const bb = calculateBollingerBands(fullIndex);
                 return bb ? bb.upper : null;
             }, '#8b5cf6', 1, [4, 2]);
             
-            drawIndicatorLine(visibleCandles, priceRange, (candle) => {
-                const bb = calculateBollingerBands(candle);
+            drawIndicatorLine(visibleCandles, priceRange, (candle, index) => {
+                const candleEpoch = candle.epoch;
+                const fullIndex = candles.findIndex(c => c.epoch === candleEpoch);
+                if (fullIndex === -1) return null;
+                const bb = calculateBollingerBands(fullIndex);
                 return bb ? bb.middle : null;
             }, '#8b5cf6', 1.5);
             
-            drawIndicatorLine(visibleCandles, priceRange, (candle) => {
-                const bb = calculateBollingerBands(candle);
+            drawIndicatorLine(visibleCandles, priceRange, (candle, index) => {
+                const candleEpoch = candle.epoch;
+                const fullIndex = candles.findIndex(c => c.epoch === candleEpoch);
+                if (fullIndex === -1) return null;
+                const bb = calculateBollingerBands(fullIndex);
                 return bb ? bb.lower : null;
             }, '#8b5cf6', 1, [4, 2]);
         }
@@ -1985,7 +2097,7 @@
             let started = false;
             
             visibleCandles.forEach((candle, index) => {
-                const value = valueFn(candle);
+                const value = valueFn(candle, index);
                 if (value === null) return;
                 
                 const x = CHART_MARGIN.left + (index * chartWidthAdj) / Math.max(1, visibleCandles.length - 1);
@@ -2424,7 +2536,7 @@
             let low24h = Infinity;
             
             const hours24 = Math.min(candles.length, 24 * 60 * 60 / activeTimeframe);
-            for (let i = 0; i < hours24; i++) {
+            for (let i = Math.max(0, candles.length - hours24); i < candles.length; i++) {
                 high24h = Math.max(high24h, candles[i].high);
                 low24h = Math.min(low24h, candles[i].low);
             }
@@ -2437,7 +2549,7 @@
             if (candles.length === 0) return;
             
             const now = Math.floor(Date.now() / 1000);
-            const lastCandleEpoch = candles[0].epoch;
+            const lastCandleEpoch = candles[candles.length - 1].epoch; // Get the latest candle
             const nextCandleTime = lastCandleEpoch + activeTimeframe;
             const remaining = Math.max(0, nextCandleTime - now);
             
@@ -2653,6 +2765,213 @@
                     ctx.fillText('Price Line', start.x + 5, start.y - 5);
                     break;
             }
+        }
+
+        // ======================
+        // MACD AND CCI INDICATORS
+        // ======================
+        function toggleMACD() {
+            showMACD = !showMACD;
+            const toggleBtn = document.getElementById('macdToggle');
+            const container = document.getElementById('macdContainer');
+            
+            if (showMACD) {
+                toggleBtn.textContent = 'ON';
+                toggleBtn.classList.add('active');
+                container.style.display = 'block';
+                drawMACD();
+            } else {
+                toggleBtn.textContent = 'OFF';
+                toggleBtn.classList.remove('active');
+                container.style.display = 'none';
+            }
+        }
+
+        function toggleCCI() {
+            showCCI = !showCCI;
+            const toggleBtn = document.getElementById('cciToggle');
+            const container = document.getElementById('cciContainer');
+            
+            if (showCCI) {
+                toggleBtn.textContent = 'ON';
+                toggleBtn.classList.add('active');
+                container.style.display = 'block';
+                drawCCI();
+            } else {
+                toggleBtn.textContent = 'OFF';
+                toggleBtn.classList.remove('active');
+                container.style.display = 'none';
+            }
+        }
+
+        function drawMACD() {
+            if (!showMACD || !macdCtx || candles.length === 0) return;
+            
+            const canvas = document.getElementById('macdCanvas');
+            macdCtx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Simple MACD visualization
+            const macdValues = calculateMACDValues();
+            if (macdValues.length === 0) return;
+            
+            // Draw MACD line
+            macdCtx.strokeStyle = '#3b82f6';
+            macdCtx.lineWidth = 1.5;
+            macdCtx.beginPath();
+            
+            macdValues.forEach((value, index) => {
+                const x = (index * canvas.width) / Math.max(1, macdValues.length - 1);
+                const y = canvas.height / 2 - (value * 10); // Scale for visibility
+                
+                if (index === 0) {
+                    macdCtx.moveTo(x, y);
+                } else {
+                    macdCtx.lineTo(x, y);
+                }
+            });
+            
+            macdCtx.stroke();
+            
+            // Draw zero line
+            macdCtx.strokeStyle = document.body.classList.contains('light-mode') ? '#64748b' : '#9ca3af';
+            macdCtx.setLineDash([2, 2]);
+            macdCtx.beginPath();
+            macdCtx.moveTo(0, canvas.height / 2);
+            macdCtx.lineTo(canvas.width, canvas.height / 2);
+            macdCtx.stroke();
+            macdCtx.setLineDash([]);
+        }
+
+        function calculateMACDValues() {
+            // Simplified MACD calculation
+            const values = [];
+            const fastPeriod = 12;
+            const slowPeriod = 26;
+            const signalPeriod = 9;
+            
+            for (let i = 0; i < candles.length; i++) {
+                if (i >= slowPeriod - 1) {
+                    // Calculate fast EMA (12-period)
+                    let fastEMA = 0;
+                    let slowEMA = 0;
+                    
+                    // Simple EMA calculation
+                    for (let j = 0; j < fastPeriod; j++) {
+                        if (i - j >= 0) {
+                            fastEMA += candles[i - j].close;
+                        }
+                    }
+                    fastEMA /= Math.min(fastPeriod, i + 1);
+                    
+                    // Calculate slow EMA (26-period)
+                    for (let j = 0; j < slowPeriod; j++) {
+                        if (i - j >= 0) {
+                            slowEMA += candles[i - j].close;
+                        }
+                    }
+                    slowEMA /= Math.min(slowPeriod, i + 1);
+                    
+                    // MACD line
+                    const macdLine = fastEMA - slowEMA;
+                    values.push(macdLine);
+                }
+            }
+            
+            return values;
+        }
+
+        function drawCCI() {
+            if (!showCCI || !cciCtx || candles.length === 0) return;
+            
+            const canvas = document.getElementById('cciCanvas');
+            cciCtx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Simple CCI visualization
+            const cciValues = calculateCCIValues();
+            if (cciValues.length === 0) return;
+            
+            // Draw CCI line
+            cciCtx.strokeStyle = '#ec4899';
+            cciCtx.lineWidth = 1.5;
+            cciCtx.beginPath();
+            
+            cciValues.forEach((value, index) => {
+                const x = (index * canvas.width) / Math.max(1, cciValues.length - 1);
+                const y = canvas.height / 2 - (value / 10); // Scale for visibility
+                
+                if (index === 0) {
+                    cciCtx.moveTo(x, y);
+                } else {
+                    cciCtx.lineTo(x, y);
+                }
+            });
+            
+            cciCtx.stroke();
+            
+            // Draw overbought/oversold lines
+            cciCtx.strokeStyle = document.body.classList.contains('light-mode') ? '#64748b' : '#9ca3af';
+            cciCtx.setLineDash([2, 2]);
+            
+            // +100 line
+            cciCtx.beginPath();
+            cciCtx.moveTo(0, canvas.height / 2 - 10);
+            cciCtx.lineTo(canvas.width, canvas.height / 2 - 10);
+            cciCtx.stroke();
+            
+            // -100 line
+            cciCtx.beginPath();
+            cciCtx.moveTo(0, canvas.height / 2 + 10);
+            cciCtx.lineTo(canvas.width, canvas.height / 2 + 10);
+            cciCtx.stroke();
+            
+            cciCtx.setLineDash([]);
+            
+            // Draw zero line
+            cciCtx.strokeStyle = document.body.classList.contains('light-mode') ? '#64748b' : '#9ca3af';
+            cciCtx.setLineDash([2, 2]);
+            cciCtx.beginPath();
+            cciCtx.moveTo(0, canvas.height / 2);
+            cciCtx.lineTo(canvas.width, canvas.height / 2);
+            cciCtx.stroke();
+            cciCtx.setLineDash([]);
+        }
+
+        function calculateCCIValues() {
+            // Simplified CCI calculation
+            const values = [];
+            const period = 20;
+            
+            for (let i = 0; i < candles.length; i++) {
+                if (i >= period - 1) {
+                    let tpSum = 0;
+                    let tpValues = [];
+                    
+                    // Calculate typical price for last 'period' candles
+                    for (let j = 0; j < period; j++) {
+                        if (i - j >= 0) {
+                            const tp = (candles[i - j].high + candles[i - j].low + candles[i - j].close) / 3;
+                            tpSum += tp;
+                            tpValues.push(tp);
+                        }
+                    }
+                    
+                    const tpMA = tpSum / period;
+                    
+                    // Calculate mean deviation
+                    let meanDev = 0;
+                    tpValues.forEach(tp => {
+                        meanDev += Math.abs(tp - tpMA);
+                    });
+                    meanDev /= period;
+                    
+                    // Calculate CCI
+                    const currentTP = (candles[i].high + candles[i].low + candles[i].close) / 3;
+                    const cci = meanDev !== 0 ? (currentTP - tpMA) / (0.015 * meanDev) : 0;
+                    values.push(cci);
+                }
+            }
+            
+            return values;
         }
 
         // ======================
