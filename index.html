@@ -1171,23 +1171,46 @@
         function getCandles(symbol, granularity) {
             if (!socket || socket.readyState !== WebSocket.OPEN) return;
             
-            const timeframe = granularity === 1 ? '1s' : 
-                             granularity === 60 ? '1m' :
-                             granularity === 300 ? '5m' :
-                             granularity === 900 ? '15m' :
-                             granularity === 3600 ? '1h' : '1s';
+            // FIX: Use integer values for granularity instead of strings
+            // Deriv API expects integer values for granularity parameter
+            const allowedGranularities = [60, 120, 180, 300, 600, 900, 1800, 3600, 7200, 14400, 86400];
+            
+            // Map our timeframes to valid Deriv granularities
+            let derivGranularity;
+            if (granularity === 1) {
+                // For 1s, we use ticks instead of candles
+                console.log('1s timeframe: Using ticks instead of candles');
+                return;
+            } else if (granularity === 60) {
+                derivGranularity = 60; // 1 minute
+            } else if (granularity === 300) {
+                derivGranularity = 300; // 5 minutes
+            } else if (granularity === 900) {
+                derivGranularity = 900; // 15 minutes
+            } else if (granularity === 3600) {
+                derivGranularity = 3600; // 1 hour
+            } else {
+                // Default to 60 seconds if not a standard value
+                derivGranularity = 60;
+            }
+            
+            // Check if the granularity is allowed
+            if (!allowedGranularities.includes(derivGranularity)) {
+                console.warn(`Granularity ${derivGranularity} not allowed. Using 60 seconds instead.`);
+                derivGranularity = 60;
+            }
             
             const candlesMsg = {
                 ticks_history: symbol,
                 style: 'candles',
-                granularity: timeframe,
+                granularity: derivGranularity, // Use integer value
                 count: 100,
                 end: 'latest',
                 subscribe: 1
             };
             
             socket.send(JSON.stringify(candlesMsg));
-            console.log(`📊 Requesting candles for ${symbol} (${timeframe})`);
+            console.log(`📊 Requesting candles for ${symbol} (${derivGranularity}s)`);
         }
 
         function handleDerivMessage(data) {
@@ -1201,12 +1224,19 @@
                 handleOHLCData(data.ohlc);
             } else if (data.error) {
                 console.error('Deriv API Error:', data.error);
+                // Fallback to simulation on API error
+                if (!isSimulationRunning) {
+                    isSimulationRunning = true;
+                    startSimulation();
+                }
             }
         }
 
         // ======================
         // DATA HANDLING
         // ======================
+        let isSimulationRunning = false;
+
         function handleTickData(tick) {
             if (!tick || !tick.quote) return;
             
@@ -1232,6 +1262,43 @@
             document.getElementById('ticksReceived').textContent = ticks.length;
             
             updateMarketData();
+            
+            // For 1s timeframe, update chart with tick data
+            if (activeTimeframe === 1) {
+                updateChartWithTick(newTick);
+            }
+        }
+
+        function updateChartWithTick(tick) {
+            // For 1s timeframe, create/update candle from ticks
+            const candleEpoch = Math.floor(tick.epoch / activeTimeframe) * activeTimeframe;
+            
+            if (candles.length === 0 || candles[0].epoch !== candleEpoch) {
+                // Create new candle
+                const newCandle = {
+                    open: tick.quote,
+                    high: tick.quote,
+                    low: tick.quote,
+                    close: tick.quote,
+                    epoch: candleEpoch,
+                    symbol: activeSymbol
+                };
+                candles.unshift(newCandle);
+                if (candles.length > 100) {
+                    candles.pop();
+                }
+                lastCandleEpoch = candleEpoch;
+            } else {
+                // Update existing candle
+                const currentCandle = candles[0];
+                currentCandle.high = Math.max(currentCandle.high, tick.quote);
+                currentCandle.low = Math.min(currentCandle.low, tick.quote);
+                currentCandle.close = tick.quote;
+            }
+            
+            drawChart();
+            drawOverlay();
+            if (showMACD) drawMACD();
         }
 
         function handleCandleData(candlesData) {
@@ -2239,9 +2306,24 @@
                                 timeframe === 3600 ? '1H' : '1s';
             document.getElementById('currentTimeframe').textContent = timeframeText;
             
+            // Clear existing data
+            candles = [];
+            ticks = [];
+            
+            // Request new data
             if (isConnected) {
                 getCandles(activeSymbol, timeframe);
+            } else {
+                generateInitialCandles();
             }
+            
+            // Reset zoom and pan
+            zoomLevel = 1;
+            panOffset = 0;
+            
+            drawChart();
+            drawOverlay();
+            if (showMACD) drawMACD();
         }
 
         function toggleIndicator(indicator) {
@@ -2292,14 +2374,20 @@
             
             updateSymbolUI();
             
+            // Clear existing data
             candles = [];
             ticks = [];
             currentPrice = 0;
             previousPrice = 0;
             
+            // Reset chart
             panOffset = 0;
             zoomLevel = 1;
             
+            // Stop any running simulation
+            isSimulationRunning = false;
+            
+            // Request new data
             if (isConnected) {
                 subscribeToSymbol(symbol);
                 getCandles(symbol, activeTimeframe);
