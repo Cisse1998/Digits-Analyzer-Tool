@@ -3,203 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced TradingView Chart</title>
+    <title>TradingView Chart - My Lovable Project</title>
     
     <!-- TradingView Widget -->
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Your custom CSS -->
+    <!-- CSS Styling -->
     <style>
-        /* Your existing CSS code */
-        @layer base {
-            :root {
-                --background: 220 20% 97%;
-                --foreground: 220 20% 10%;
-                --primary: 220 70% 50%;
-                --chart-positive: 142 71% 45%;
-                --chart-negative: 0 72% 51%;
-            }
-            .dark {
-                --background: 222 47% 8%;
-                --foreground: 210 40% 98%;
-                --primary: 217 91% 60%;
-            }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
         body {
-            background: hsl(var(--background));
-            color: hsl(var(--foreground));
-            font-family: system-ui, -apple-system, sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
         }
         
         .chart-container {
+            background: #1e293b;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        #tradingview_chart {
+            width: 100%;
             height: 600px;
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
         
-        .btn-primary {
-            background: hsl(var(--primary));
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
             color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
             border: none;
+            border-radius: 10px;
             cursor: pointer;
-            transition: opacity 0.2s;
+            font-weight: 600;
+            transition: transform 0.2s;
         }
         
-        .btn-primary:hover {
-            opacity: 0.9;
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .symbols {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .symbol-btn {
+            padding: 10px 20px;
+            background: #334155;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .symbol-btn:hover {
+            background: #475569;
         }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8">
-    <div class="max-w-7xl mx-auto">
-        <!-- Header -->
-        <header class="mb-8 text-center">
-            <h1 class="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                📈 Advanced TradingView Chart
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400">
-                Professional trading analysis with real-time market data
-            </p>
+<body>
+    <div class="container">
+        <header>
+            <h1>📈 My Trading Dashboard</h1>
+            <p>Built with Lovable.ai - Now Live on GitHub!</p>
         </header>
-
-        <!-- Main Chart -->
-        <div class="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-6 mb-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Live Market Chart</h2>
-                <div class="flex gap-2">
-                    <button class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600" onclick="toggleTheme()">
-                        🌙 Toggle Theme
-                    </button>
-                </div>
+        
+        <div class="chart-container">
+            <div id="tradingview_chart"></div>
+            
+            <div class="controls">
+                <button onclick="changeTheme('light')">Light Mode</button>
+                <button onclick="changeTheme('dark')">Dark Mode</button>
+                <button onclick="addIndicator('MACD')">Add MACD</button>
+                <button onclick="addIndicator('RSI')">Add RSI</button>
             </div>
             
-            <!-- TradingView Widget Container -->
-            <div id="tradingview_chart" class="chart-container"></div>
-            
-            <!-- Controls -->
-            <div class="mt-6 flex flex-wrap gap-3 justify-center">
-                <button onclick="changeSymbol('BTCUSD')" class="btn-primary">Bitcoin (BTC)</button>
-                <button onclick="changeSymbol('NASDAQ:AAPL')" class="btn-primary">Apple (AAPL)</button>
-                <button onclick="changeSymbol('ETHUSD')" class="btn-primary">Ethereum (ETH)</button>
-                <button onclick="changeSymbol('TSLA')" class="btn-primary">Tesla (TSLA)</button>
-                <button onclick="changeSymbol('EURUSD')" class="btn-primary">EUR/USD</button>
+            <div class="symbols">
+                <div class="symbol-btn" onclick="changeSymbol('BTCUSD')">Bitcoin</div>
+                <div class="symbol-btn" onclick="changeSymbol('NASDAQ:AAPL')">Apple</div>
+                <div class="symbol-btn" onclick="changeSymbol('ETHUSD')">Ethereum</div>
+                <div class="symbol-btn" onclick="changeSymbol('TSLA')">Tesla</div>
             </div>
         </div>
-
-        <!-- Features Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl">
-                <div class="text-blue-600 dark:text-blue-400 text-2xl mb-4">📊</div>
-                <h3 class="font-semibold text-lg mb-2">Advanced Analysis</h3>
-                <p class="text-gray-600 dark:text-gray-400">50+ technical indicators and drawing tools for professional analysis.</p>
-            </div>
-            <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl">
-                <div class="text-green-600 dark:text-green-400 text-2xl mb-4">⚡</div>
-                <h3 class="font-semibold text-lg mb-2">Real-Time Data</h3>
-                <p class="text-gray-600 dark:text-gray-400">Live market data with instant updates and multiple timeframes.</p>
-            </div>
-            <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl">
-                <div class="text-purple-600 dark:text-purple-400 text-2xl mb-4">📱</div>
-                <h3 class="font-semibold text-lg mb-2">Responsive Design</h3>
-                <p class="text-gray-600 dark:text-gray-400">Perfect viewing experience on desktop, tablet, and mobile devices.</p>
-            </div>
+        
+        <div style="text-align: center; color: #94a3b8; margin-top: 40px;">
+            <p>This was originally built in Lovable.ai and deployed to GitHub Pages</p>
+            <p>Real-time charts powered by TradingView</p>
         </div>
-
-        <!-- Footer -->
-        <footer class="text-center text-gray-500 dark:text-gray-400 text-sm pt-6 border-t border-gray-200 dark:border-gray-800">
-            <p>Powered by TradingView • Data updates in real-time</p>
-            <p class="mt-1">This is an advanced charting tool for market analysis and trading.</p>
-        </footer>
     </div>
 
-    <!-- JavaScript -->
     <script>
-        let currentTheme = 'light';
+        // TradingView Widget
         let widget = null;
-
-        // Initialize TradingView Widget
+        
+        // Initialize chart
         function initChart() {
-            if (typeof TradingView === 'undefined') {
-                console.error('TradingView script not loaded');
-                return;
-            }
-
             widget = new TradingView.widget({
                 "container_id": "tradingview_chart",
                 "width": "100%",
                 "height": "600",
                 "symbol": "BTCUSD",
-                "interval": "1",
+                "interval": "D",
                 "timezone": "Etc/UTC",
-                "theme": currentTheme,
+                "theme": "dark",
                 "style": "1",
                 "locale": "en",
-                "toolbar_bg": "#f1f3f6",
                 "enable_publishing": false,
-                "withdateranges": true,
-                "hide_side_toolbar": false,
                 "allow_symbol_change": true,
-                "details": true,
-                "hotlist": true,
-                "calendar": true,
-                "studies": [
-                    "Volume@tv-basicstudies",
-                    "MovingAverage@tv-basicstudies",
-                    "RSI@tv-basicstudies"
-                ],
-                "show_popup_button": true,
-                "popup_width": "1000",
-                "popup_height": "650",
-                "support_host": "https://www.tradingview.com"
+                "studies": ["Volume@tv-basicstudies"],
+                "show_popup_button": true
             });
         }
-
-        // Change trading symbol
+        
+        // Change theme
+        function changeTheme(theme) {
+            if (widget) {
+                widget.setTheme(theme);
+                if (theme === 'light') {
+                    document.body.style.background = '#f8fafc';
+                    document.body.style.color = '#0f172a';
+                } else {
+                    document.body.style.background = '#0f172a';
+                    document.body.style.color = '#f8fafc';
+                }
+            }
+        }
+        
+        // Change symbol
         function changeSymbol(symbol) {
             if (widget && widget.chart) {
-                widget.chart().setSymbol(symbol, null, () => {
-                    console.log(`Changed to ${symbol}`);
-                });
+                widget.chart().setSymbol(symbol);
             }
         }
-
-        // Toggle theme
-        function toggleTheme() {
-            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
-            // Update HTML class
-            document.documentElement.classList.toggle('dark');
-            
-            // Update TradingView theme
-            if (widget) {
-                widget.setTheme(currentTheme);
+        
+        // Add indicator
+        function addIndicator(indicator) {
+            if (widget && widget.chart) {
+                widget.chart().executeActionById('insertIndicator');
+                // This is simplified - real implementation would be more complex
+                alert('Adding ' + indicator + ' indicator');
             }
         }
-
-        // Initialize when page loads
-        window.addEventListener('DOMContentLoaded', () => {
-            // Check for dark mode preference
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                document.documentElement.classList.add('dark');
-                currentTheme = 'dark';
-            }
-            
-            // Initialize chart
+        
+        // Start when TradingView loads
+        if (typeof TradingView !== 'undefined') {
             initChart();
-        });
-
-        // Handle widget script loading
-        const script = document.createElement('script');
-        script.src = 'https://s3.tradingview.com/tv.js';
-        script.onload = initChart;
-        document.head.appendChild(script);
+        } else {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(initChart, 1000);
+            });
+        }
     </script>
 </body>
 </html>
