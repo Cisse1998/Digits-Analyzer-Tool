@@ -1227,8 +1227,8 @@
             } else if (granularity === 3600) {
                 derivGranularity = 3600; // 1 hour
             } else {
-                // For 1s or other unsupported timeframes, use ticks
-                console.log('1s timeframe: Using ticks instead of candles');
+                // For 1s timeframe, we'll use tick data to build candles
+                console.log('1s timeframe: Using tick data to build candles');
                 return;
             }
             
@@ -1255,10 +1255,20 @@
             } else if (data.msg_type === 'ohlc') {
                 handleOHLCData(data.ohlc);
             } else if (data.error) {
-                console.error('Deriv API Error:', data.error);
-                if (!isSimulationRunning) {
-                    isSimulationRunning = true;
-                    startSimulation();
+                console.warn('Deriv API Warning:', data.error?.message || 'API Error');
+                // Don't fall back to simulation immediately for minor errors
+                if (data.error?.code === 'InvalidGranularity') {
+                    // Handle 1s timeframe specifically
+                    if (activeTimeframe === 1) {
+                        console.log('Using tick data for 1s candles');
+                    }
+                } else {
+                    // Fallback to simulation for serious errors
+                    if (!isSimulationRunning) {
+                        console.log('Falling back to simulation');
+                        isSimulationRunning = true;
+                        startSimulation();
+                    }
                 }
             }
         }
@@ -1294,7 +1304,7 @@
             
             updateMarketData();
             
-            // For 1s timeframe, update chart with tick data
+            // For 1s timeframe, build candles from ticks
             if (activeTimeframe === 1) {
                 updateChartWithTick(newTick);
             }
@@ -1505,9 +1515,15 @@
         // CHART DRAWING
         // ======================
         function drawChart() {
-            if (!ctx || candles.length === 0) return;
+            if (!ctx) return;
             
             ctx.clearRect(0, 0, chartWidth, chartHeight);
+            
+            // If no candles, show loading message
+            if (candles.length === 0) {
+                drawLoadingMessage();
+                return;
+            }
             
             // Calculate visible range
             const totalCandles = candles.length;
@@ -1519,7 +1535,10 @@
             const endIndex = Math.min(startIndex + visibleCount, totalCandles);
             const visibleCandlesData = candles.slice(startIndex, endIndex);
             
-            if (visibleCandlesData.length === 0) return;
+            if (visibleCandlesData.length === 0) {
+                drawLoadingMessage();
+                return;
+            }
             
             // Calculate price range
             const priceRange = calculatePriceRange(visibleCandlesData);
@@ -1553,6 +1572,17 @@
             
             // Draw price labels
             drawPriceLabels(priceRange);
+        }
+
+        function drawLoadingMessage() {
+            ctx.fillStyle = document.body.classList.contains('light-mode') ? '#f1f5f9' : '#1e293b';
+            ctx.fillRect(0, 0, chartWidth, chartHeight);
+            
+            ctx.fillStyle = document.body.classList.contains('light-mode') ? '#64748b' : '#9ca3af';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Loading chart data...', chartWidth / 2, chartHeight / 2);
         }
 
         function calculatePriceRange(visibleCandles) {
