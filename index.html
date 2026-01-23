@@ -1216,7 +1216,12 @@
 
         function unsubscribeFromCandles() {
             if (currentCandleSubscription && socket && socket.readyState === WebSocket.OPEN) {
-                const unsubscribeMsg = { ...currentCandleSubscription, subscribe: 0 };
+                const unsubscribeMsg = { 
+                    ticks_history: currentCandleSubscription.ticks_history,
+                    style: 'candles',
+                    granularity: currentCandleSubscription.granularity,
+                    subscribe: 0 
+                };
                 socket.send(JSON.stringify(unsubscribeMsg));
                 console.log(`Unsubscribed from candles for ${currentCandleSubscription.ticks_history} (${currentCandleSubscription.granularity}s)`);
                 currentCandleSubscription = null;
@@ -1246,24 +1251,33 @@
         function getCandles(symbol, granularity) {
             if (!socket || socket.readyState !== WebSocket.OPEN) return;
             
-            // Map granularity to valid Deriv API values
-            let derivGranularity;
-            if (granularity === 60) {
-                derivGranularity = 60; // 1 minute
-            } else if (granularity === 300) {
-                derivGranularity = 300; // 5 minutes
-            } else if (granularity === 900) {
-                derivGranularity = 900; // 15 minutes
-            } else if (granularity === 3600) {
-                derivGranularity = 3600; // 1 hour
-            } else {
-                // For 1s timeframe, we use tick data to build candles
-                console.log('1s timeframe: Using tick data to build candles');
-                
-                // Unsubscribe from any existing candle subscription
+            // Check if symbol supports this timeframe
+            const symbolInfo = SYNTHETIC_INDICES[symbol];
+            if (symbolInfo && symbolInfo.type === '1s' && granularity > 1) {
+                console.log(`Symbol ${symbol} is a 1s symbol and doesn't support ${granularity}s timeframe`);
+                // For 1s symbols, we only use tick data
                 if (currentCandleSubscription) {
                     unsubscribeFromCandles();
                 }
+                return;
+            }
+            
+            // Map granularity to valid Deriv API values
+            let derivGranularity;
+            if (granularity === 60) {
+                derivGranularity = 60;
+            } else if (granularity === 300) {
+                derivGranularity = 300;
+            } else if (granularity === 900) {
+                derivGranularity = 900;
+            } else if (granularity === 3600) {
+                derivGranularity = 3600;
+            } else {
+                // For 1s timeframe, we don't use candles, so unsubscribe from candles if any
+                if (currentCandleSubscription) {
+                    unsubscribeFromCandles();
+                }
+                console.log('1s timeframe: Using tick data to build candles');
                 return;
             }
             
@@ -1271,6 +1285,7 @@
             if (currentCandleSubscription && 
                 currentCandleSubscription.ticks_history === symbol && 
                 currentCandleSubscription.granularity === derivGranularity) {
+                console.log(`Already subscribed to candles for ${symbol} (${derivGranularity}s)`);
                 return; // Already subscribed
             }
             
@@ -1290,10 +1305,15 @@
             
             socket.send(JSON.stringify(candlesMsg));
             console.log(`📊 Requesting candles for ${symbol} (${derivGranularity}s)`);
-            currentCandleSubscription = { ...candlesMsg }; // Store the subscription message
+            currentCandleSubscription = { 
+                ticks_history: symbol,
+                granularity: derivGranularity
+            };
         }
 
         function handleDerivMessage(data) {
+            console.log('Received Deriv message:', data.msg_type);
+            
             if (data.msg_type === 'tick') {
                 handleTickData(data.tick);
             } else if (data.msg_type === 'candles') {
@@ -1304,22 +1324,22 @@
                 handleOHLCData(data.ohlc);
             } else if (data.error) {
                 console.warn('Deriv API Warning:', data.error?.message || 'API Error');
-                // Don't fall back to simulation immediately for minor errors
+                
+                // Handle specific errors
                 if (data.error?.code === 'InvalidGranularity') {
-                    // Handle 1s timeframe specifically
                     if (activeTimeframe === 1) {
                         console.log('Using tick data for 1s candles');
+                        currentCandleSubscription = null;
                     }
                 } else if (data.error?.code === 'InputValidationFailed') {
-                    console.log('Input validation failed, checking symbol compatibility...');
-                    // Check if symbol supports requested granularity
-                    const symbolInfo = SYNTHETIC_INDICES[activeSymbol];
-                    if (symbolInfo && symbolInfo.type === '1s' && activeTimeframe > 1) {
-                        console.log('Symbol does not support this timeframe, using tick data');
-                        // Unsubscribe from candles and use tick data
-                        if (currentCandleSubscription) {
-                            unsubscribeFromCandles();
-                        }
+                    console.log('Input validation failed for current subscription');
+                    
+                    // Check if this is for a candle subscription
+                    if (currentCandleSubscription && 
+                        data.error?.details?.includes('ticks_history') ||
+                        data.error?.details?.includes('granularity')) {
+                        console.log('Invalid candle subscription, clearing...');
+                        currentCandleSubscription = null;
                     }
                 }
             }
@@ -2755,13 +2775,17 @@
             candles = [];
             ticks = [];
             
-            // If we are connected, unsubscribe from current candles (if any) and then get new candles (if not 1s)
+            // If we are connected, unsubscribe from current candles (if any) and then get new candles
             if (isConnected) {
                 // Unsubscribe from candles (if any) because we are changing the timeframe
                 if (currentCandleSubscription) {
                     unsubscribeFromCandles();
                 }
-                // If timeframe is not 1s, get candles
+                
+                // Always subscribe to ticks for the current symbol
+                subscribeToSymbol(activeSymbol);
+                
+                // If timeframe is not 1s, try to get candles
                 if (timeframe !== 1) {
                     getCandles(activeSymbol, timeframe);
                 }
