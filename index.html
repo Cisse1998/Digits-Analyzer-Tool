@@ -17,10 +17,6 @@
             --chart-bullish: #10b981;
             --chart-bearish: #ef4444;
             --muted-foreground: #9ca3af;
-            --macd-bullish-strong: #059669;
-            --macd-bullish-weak: #10b981;
-            --macd-bearish-strong: #dc2626;
-            --macd-bearish-weak: #ef4444;
         }
 
         .light-mode {
@@ -34,10 +30,6 @@
             --chart-bullish: #10b981;
             --chart-bearish: #ef4444;
             --muted-foreground: #64748b;
-            --macd-bullish-strong: #059669;
-            --macd-bullish-weak: #10b981;
-            --macd-bearish-strong: #dc2626;
-            --macd-bearish-weak: #ef4444;
         }
 
         * {
@@ -800,39 +792,23 @@
         }
 
         /* MACD Histogram Legend */
-        .macd-histogram-legend {
+        .macd-legend {
             display: flex;
             gap: 15px;
-            margin-top: 10px;
+            margin-top: 5px;
             font-size: 10px;
         }
 
-        .histogram-legend-item {
+        .macd-legend-item {
             display: flex;
             align-items: center;
             gap: 4px;
         }
 
-        .histogram-color {
+        .macd-legend-color {
             width: 12px;
             height: 12px;
             border-radius: 2px;
-        }
-
-        .histogram-color.bullish-strong {
-            background-color: var(--macd-bullish-strong);
-        }
-
-        .histogram-color.bullish-weak {
-            background-color: var(--macd-bullish-weak);
-        }
-
-        .histogram-color.bearish-strong {
-            background-color: var(--macd-bearish-strong);
-        }
-
-        .histogram-color.bearish-weak {
-            background-color: var(--macd-bearish-weak);
         }
     </style>
 </head>
@@ -1003,22 +979,22 @@
                     <div class="macd-container" id="macdContainer" style="display: none;">
                         <canvas class="macd-canvas" id="macdCanvas"></canvas>
                         <!-- MACD Histogram Legend -->
-                        <div class="macd-histogram-legend">
-                            <div class="histogram-legend-item">
-                                <div class="histogram-color bullish-strong"></div>
-                                <span>Strong Bullish</span>
+                        <div class="macd-legend" style="position: absolute; bottom: 5px; left: 5px;">
+                            <div class="macd-legend-item">
+                                <div class="macd-legend-color" style="background: #059669;"></div>
+                                <span>Strong Bull</span>
                             </div>
-                            <div class="histogram-legend-item">
-                                <div class="histogram-color bullish-weak"></div>
-                                <span>Weak Bullish</span>
+                            <div class="macd-legend-item">
+                                <div class="macd-legend-color" style="background: #10b981;"></div>
+                                <span>Weak Bull</span>
                             </div>
-                            <div class="histogram-legend-item">
-                                <div class="histogram-color bearish-strong"></div>
-                                <span>Strong Bearish</span>
+                            <div class="macd-legend-item">
+                                <div class="macd-legend-color" style="background: #7f1d1d;"></div>
+                                <span>Strong Bear</span>
                             </div>
-                            <div class="histogram-legend-item">
-                                <div class="histogram-color bearish-weak"></div>
-                                <span>Weak Bearish</span>
+                            <div class="macd-legend-item">
+                                <div class="macd-legend-color" style="background: #ef4444;"></div>
+                                <span>Weak Bear</span>
                             </div>
                         </div>
                     </div>
@@ -1258,10 +1234,10 @@
         let currentCCI = 0;
         let macdValues = [];
         let signalValues = [];
-        let histogramValues = []; // New: Store histogram values
+        let histogramValues = [];
         let currentMACD = 0;
         let currentSignal = 0;
-        let currentHistogram = 0; // New: Current histogram value
+        let currentHistogram = 0;
         
         // Countdown tracking
         let nextCandleTime = 0;
@@ -1278,6 +1254,16 @@
         const PAN_STEP = 10;
         const CHART_MARGIN = { top: 20, right: 50, left: 60, bottom: 30 };
         const DRAWING_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+        // MACD Histogram colors
+        const MACD_COLORS = {
+            strongBullish: '#059669',    // Dark green for strong bullish momentum
+            weakBullish: '#10b981',      // Light green for weak bullish momentum
+            strongBearish: '#7f1d1d',    // Dark red for strong bearish momentum
+            weakBearish: '#ef4444',      // Light red for weak bearish momentum
+            macdLine: '#3b82f6',         // Blue for MACD line
+            signalLine: '#ec4899'        // Pink for signal line
+        };
 
         // ======================
         // THEME MANAGEMENT
@@ -1658,11 +1644,6 @@
                         if (cciValues.length > 0) {
                             cciValues.shift();
                         }
-                        if (macdValues.length > 0) {
-                            macdValues.shift();
-                            signalValues.shift();
-                            histogramValues.shift();
-                        }
                     }
                 }
             }
@@ -1843,7 +1824,7 @@
                     }
                     signalValues.push(signalEMA);
                     
-                    // Calculate histogram value (MACD - Signal)
+                    // Calculate histogram (MACD - Signal)
                     const histogram = macdLine - signalEMA;
                     histogramValues.push(histogram);
                 } else {
@@ -1852,7 +1833,7 @@
                 }
             }
             
-            // Update current MACD, Signal, and Histogram values
+            // Update current values
             if (macdValues.length > 0 && signalValues.length > 0 && histogramValues.length > 0) {
                 currentMACD = macdValues[macdValues.length - 1];
                 currentSignal = signalValues[signalValues.length - 1];
@@ -1963,19 +1944,9 @@
             
             if (histogramElement) {
                 histogramElement.textContent = currentHistogram.toFixed(4);
-                
-                // Determine histogram color based on momentum strength
-                let color;
-                if (currentHistogram >= 0) {
-                    // Bullish - check if histogram is increasing (strong) or decreasing (weak)
-                    const prevHistogram = histogramValues.length > 1 ? histogramValues[histogramValues.length - 2] : 0;
-                    color = currentHistogram > prevHistogram ? '#059669' : '#10b981'; // Dark green for strong, light green for weak
-                } else {
-                    // Bearish - check if histogram is decreasing (strong) or increasing (weak)
-                    const prevHistogram = histogramValues.length > 1 ? histogramValues[histogramValues.length - 2] : 0;
-                    color = currentHistogram < prevHistogram ? '#dc2626' : '#ef4444'; // Dark red for strong, light red for weak
-                }
-                histogramElement.style.color = color;
+                histogramElement.style.color = currentHistogram >= 0 ? 
+                    (currentHistogram > currentMACD * 0.8 ? '#059669' : '#10b981') : 
+                    (currentHistogram < currentMACD * 0.8 ? '#7f1d1d' : '#ef4444');
             }
         }
 
@@ -3246,68 +3217,98 @@
         }
 
         function drawMACD() {
-            if (!showMACD || !macdCtx || macdValues.length === 0 || histogramValues.length === 0) return;
+            if (!showMACD || !macdCtx || macdValues.length === 0) return;
             
             const canvas = document.getElementById('macdCanvas');
             macdCtx.clearRect(0, 0, canvas.width, canvas.height);
             
+            // Get visible data based on horizontal pan and zoom
+            const totalDataPoints = macdValues.length;
+            const visibleCount = Math.min(
+                MAX_VISIBLE_CANDLES,
+                Math.max(MIN_VISIBLE_CANDLES, Math.floor(totalDataPoints / horizontalZoom))
+            );
+            const startIndex = Math.max(0, Math.min(totalDataPoints - visibleCount, Math.floor(horizontalPan)));
+            const endIndex = Math.min(startIndex + visibleCount, totalDataPoints);
+            
+            const visibleMACD = macdValues.slice(startIndex, endIndex);
+            const visibleSignal = signalValues.slice(startIndex, endIndex);
+            const visibleHistogram = histogramValues.slice(startIndex, endIndex);
+            
+            if (visibleMACD.length === 0) return;
+            
             // Find min and max for scaling
             let min = Infinity;
             let max = -Infinity;
-            macdValues.forEach(value => {
+            
+            visibleMACD.forEach(value => {
                 min = Math.min(min, value);
                 max = Math.max(max, value);
             });
             
-            signalValues.forEach(value => {
+            visibleSignal.forEach(value => {
                 min = Math.min(min, value);
                 max = Math.max(max, value);
             });
             
-            histogramValues.forEach(value => {
+            visibleHistogram.forEach(value => {
                 min = Math.min(min, value);
                 max = Math.max(max, value);
             });
             
             const range = Math.max(Math.abs(min), Math.abs(max)) || 1;
-            const histogramMaxHeight = canvas.height * 0.4; // Histograms take 40% of height
             
-            // Draw histogram bars
-            const visibleHistogram = histogramValues.slice(-MAX_VISIBLE_CANDLES);
-            const visibleMACD = macdValues.slice(-MAX_VISIBLE_CANDLES);
-            const visibleSignal = signalValues.slice(-MAX_VISIBLE_CANDLES);
+            // Draw histogram bars first (so they are behind the lines)
+            const barWidth = canvas.width / visibleHistogram.length;
             
-            // Calculate bar width
-            const barWidth = Math.max(1, canvas.width / visibleHistogram.length * 0.8);
-            const barSpacing = canvas.width / visibleHistogram.length * 0.2;
-            
-            for (let i = 0; i < visibleHistogram.length; i++) {
-                const value = visibleHistogram[i];
-                const x = (i * (barWidth + barSpacing)) + barSpacing/2;
+            visibleHistogram.forEach((value, index) => {
+                if (index >= visibleHistogram.length - 1) return; // Skip the last one for comparison
                 
-                if (value !== 0) {
-                    const barHeight = Math.abs(value) * histogramMaxHeight / range;
-                    const y = value >= 0 ? canvas.height/2 - barHeight : canvas.height/2;
+                const x = index * barWidth;
+                const width = barWidth * 0.8;
+                const centerY = canvas.height / 2;
+                
+                // Calculate bar height (scaled)
+                const barHeight = Math.abs(value * canvas.height / 2 / range);
+                
+                let color;
+                
+                if (value >= 0) {
+                    // Bullish (MACD above signal)
+                    const nextValue = visibleHistogram[index + 1];
+                    // Dark green for strong momentum (histogram increasing)
+                    // Light green for weak momentum (histogram decreasing)
+                    color = nextValue > value ? MACD_COLORS.strongBullish : MACD_COLORS.weakBullish;
                     
-                    // Determine histogram color based on momentum strength
-                    let color;
-                    if (value >= 0) {
-                        // Bullish - check if histogram is increasing (strong) or decreasing (weak)
-                        const prevValue = i > 0 ? visibleHistogram[i-1] : 0;
-                        color = value > prevValue ? '#059669' : '#10b981'; // Dark green for strong, light green for weak
-                    } else {
-                        // Bearish - check if histogram is decreasing (strong) or increasing (weak)
-                        const prevValue = i > 0 ? visibleHistogram[i-1] : 0;
-                        color = value < prevValue ? '#dc2626' : '#ef4444'; // Dark red for strong, light red for weak
-                    }
-                    
+                    // Draw upward bar
+                    const y = centerY - barHeight;
                     macdCtx.fillStyle = color;
-                    macdCtx.fillRect(x, y, barWidth, Math.abs(barHeight));
+                    macdCtx.fillRect(x + width * 0.1, y, width, barHeight);
+                } else {
+                    // Bearish (MACD below signal)
+                    const nextValue = visibleHistogram[index + 1];
+                    // Dark red for strong momentum (histogram becoming more negative)
+                    // Light red for weak momentum (histogram becoming less negative)
+                    color = nextValue < value ? MACD_COLORS.strongBearish : MACD_COLORS.weakBearish;
+                    
+                    // Draw downward bar
+                    const y = centerY;
+                    macdCtx.fillStyle = color;
+                    macdCtx.fillRect(x + width * 0.1, y, width, barHeight);
                 }
-            }
+            });
+            
+            // Draw zero line
+            macdCtx.strokeStyle = document.body.classList.contains('light-mode') ? '#64748b' : '#9ca3af';
+            macdCtx.setLineDash([2, 2]);
+            macdCtx.beginPath();
+            macdCtx.moveTo(0, canvas.height / 2);
+            macdCtx.lineTo(canvas.width, canvas.height / 2);
+            macdCtx.stroke();
+            macdCtx.setLineDash([]);
             
             // Draw MACD line
-            macdCtx.strokeStyle = '#3b82f6';
+            macdCtx.strokeStyle = MACD_COLORS.macdLine;
             macdCtx.lineWidth = 1.5;
             macdCtx.beginPath();
             
@@ -3325,7 +3326,7 @@
             macdCtx.stroke();
             
             // Draw signal line
-            macdCtx.strokeStyle = '#ec4899';
+            macdCtx.strokeStyle = MACD_COLORS.signalLine;
             macdCtx.lineWidth = 1.5;
             macdCtx.beginPath();
             
@@ -3341,15 +3342,6 @@
             });
             
             macdCtx.stroke();
-            
-            // Draw zero line
-            macdCtx.strokeStyle = document.body.classList.contains('light-mode') ? '#64748b' : '#9ca3af';
-            macdCtx.setLineDash([2, 2]);
-            macdCtx.beginPath();
-            macdCtx.moveTo(0, canvas.height / 2);
-            macdCtx.lineTo(canvas.width, canvas.height / 2);
-            macdCtx.stroke();
-            macdCtx.setLineDash([]);
         }
 
         function drawCCI() {
