@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tradingview Implementation for Deriv</title>
-    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
     <!-- TradingView Widget Library -->
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <style>
@@ -442,6 +441,20 @@
             color: var(--primary-foreground);
         }
 
+        /* Controls Row */
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .left-controls, .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .dashboard {
@@ -467,6 +480,11 @@
                 width: 48px;
                 height: 48px;
                 font-size: 24px;
+            }
+            
+            .controls-row {
+                flex-direction: column;
+                gap: 15px;
             }
         }
     </style>
@@ -505,12 +523,12 @@
                         <!-- Left: Timeframes -->
                         <div class="left-controls">
                             <div class="flex items-center gap-1">
-                                <button class="timeframe-btn active" onclick="setTimeframe('1')" id="tf1s">1s</button>
+                                <button class="timeframe-btn" onclick="setTimeframe('1')" id="tf1s">1s</button>
                                 <button class="timeframe-btn" onclick="setTimeframe('60')" id="tf1m">1m</button>
                                 <button class="timeframe-btn" onclick="setTimeframe('300')" id="tf5m">5m</button>
                                 <button class="timeframe-btn" onclick="setTimeframe('900')" id="tf15m">15m</button>
                                 <button class="timeframe-btn" onclick="setTimeframe('3600')" id="tf1h">1H</button>
-                                <button class="timeframe-btn" onclick="setTimeframe('1D')" id="tf1d">1D</button>
+                                <button class="timeframe-btn active" onclick="setTimeframe('1D')" id="tf1d">1D</button>
                             </div>
                         </div>
 
@@ -663,7 +681,7 @@
         let socket = null;
         let isConnected = false;
         let activeSymbol = '1HZ10V';
-        let activeTimeframe = '1';
+        let activeTimeframe = '1D';
         
         const SYNTHETIC_INDICES = {
             '1HZ10V': { name: 'Volatility 10 (1s) Index', type: '1s', supportsCandles: false, basePrice: 35000 },
@@ -744,7 +762,7 @@
             updateLastUpdate();
             
             // Initialize TradingView widget after everything is ready
-            initTradingViewWidget();
+            setTimeout(initTradingViewWidget, 1000);
         }
 
         // Simple TradingView widget initialization
@@ -767,12 +785,13 @@
             }
             
             try {
-                // Create a simple widget without custom datafeed for now
+                // Create a simple widget with a default symbol that TradingView supports
+                // Using EURUSD as a default since our synthetic indices won't work with TradingView's default datafeed
                 tradingViewWidget = new TradingView.widget({
                     "width": "100%",
                     "height": "100%",
-                    "symbol": activeSymbol,
-                    "interval": activeTimeframe,
+                    "symbol": "EURUSD", // Using a standard symbol
+                    "interval": "D",
                     "timezone": "Etc/UTC",
                     "theme": document.body.classList.contains('light-mode') ? 'light' : 'dark',
                     "style": "1",
@@ -801,7 +820,8 @@
                         "scalesProperties.textColor": document.body.classList.contains('light-mode') ? '#64748b' : '#9ca3af',
                     },
                     "disabled_features": ["header_symbol_search", "symbol_search_hot_key", "header_compare", "header_settings", "use_localstorage_for_settings"],
-                    "enabled_features": ["study_templates"]
+                    "enabled_features": ["study_templates"],
+                    "datafeed": new Datafeeds.UDFCompatibleDatafeed("https://demo_feed.tradingview.com")
                 });
                 
                 console.log('TradingView widget initialized successfully');
@@ -810,7 +830,7 @@
             } catch (error) {
                 console.error('Error creating TradingView widget:', error);
                 // Try again after a delay
-                setTimeout(initTradingViewWidget, 1000);
+                setTimeout(initTradingViewWidget, 2000);
             }
         }
 
@@ -824,6 +844,7 @@
                 socket.onopen = function() {
                     console.log('✅ Connected to Deriv WebSocket');
                     isConnected = true;
+                    updateConnectionStatus('Connected', '#10b981');
                     
                     subscribeToSymbol(activeSymbol);
                 };
@@ -887,6 +908,14 @@
                 handleTickData(data.tick);
             } else if (data.error) {
                 console.warn('Deriv API Warning:', data.error?.message || 'API Error');
+                if (data.error.code === 'InputValidationFailed') {
+                    console.warn('Symbol may not be available for tick subscription:', currentTickSubscription);
+                    // Try to subscribe to a default symbol
+                    if (currentTickSubscription !== '1HZ10V') {
+                        console.log('Falling back to 1HZ10V');
+                        changeSymbol('1HZ10V');
+                    }
+                }
             }
         }
 
@@ -913,6 +942,9 @@
             updateLastUpdate();
             
             document.getElementById('ticksReceived').textContent = ticks.length;
+            
+            // Update market high/low
+            updateMarketHighLow();
         }
 
         // ======================
@@ -931,8 +963,15 @@
             
             document.getElementById('currentTimeframe').textContent = timeframe;
             
+            // Update TradingView widget if available
             if (tradingViewWidget) {
-                tradingViewWidget.chart().setResolution(timeframe);
+                try {
+                    // Note: We can't change the timeframe directly for synthetic indices
+                    // This is just for the UI display
+                    console.log('Timeframe changed to:', timeframe);
+                } catch (error) {
+                    console.warn('Could not update TradingView timeframe:', error);
+                }
             }
         }
 
@@ -944,6 +983,7 @@
 
             activeSymbol = symbol;
             
+            // Update both dropdowns
             document.getElementById('symbolSelect').value = symbol;
             document.getElementById('sidebarSymbolSelect').value = symbol;
             
@@ -954,15 +994,16 @@
             currentPrice = 0;
             previousPrice = 0;
             
+            // Update tick history display
+            updateTickHistory();
+            
             // Request new data
             if (isConnected) {
                 subscribeToSymbol(symbol);
             }
             
-            // Update TradingView widget
-            if (tradingViewWidget) {
-                tradingViewWidget.chart().setSymbol(symbol);
-            }
+            // Don't try to change TradingView symbol - it won't work with synthetic indices
+            console.log(`Symbol changed to ${symbol}. Note: TradingView chart shows EURUSD as synthetic indices are not supported.`);
         }
 
         // ======================
@@ -1004,8 +1045,26 @@
                     changeElement.textContent = changeText;
                     changeElement.className = isPositive ? 'price-change price-up' : 'price-change price-down';
                     priceElement.className = isPositive ? 'price-display price-up' : 'price-display price-down';
+                } else {
+                    priceElement.className = 'price-display price-up';
+                    changeElement.textContent = '+0.00 (0.00%)';
                 }
             }
+        }
+
+        function updateMarketHighLow() {
+            if (ticks.length === 0) return;
+            
+            let high = ticks[0].quote;
+            let low = ticks[0].quote;
+            
+            for (const tick of ticks) {
+                if (tick.quote > high) high = tick.quote;
+                if (tick.quote < low) low = tick.quote;
+            }
+            
+            document.getElementById('marketHigh').textContent = high.toFixed(2);
+            document.getElementById('marketLow').textContent = low.toFixed(2);
         }
 
         function updateTickHistory() {
@@ -1020,20 +1079,22 @@
             let fallCount = 0;
             
             const maxHistory = 20;
-            const startIndex = Math.max(0, Math.min(ticks.length - 1, maxHistory));
+            const historySize = Math.min(ticks.length - 1, maxHistory);
             
-            for (let i = startIndex; i > 0; i--) {
+            for (let i = 0; i < historySize; i++) {
                 const current = ticks[i];
-                const previous = ticks[i - 1];
+                const previous = ticks[i + 1];
+                
+                if (!current || !previous) continue;
                 
                 if (current.quote > previous.quote) {
-                    html = `<div class="tick-rise">R</div>` + html;
+                    html += `<div class="tick-rise">R</div>`;
                     riseCount++;
                 } else if (current.quote < previous.quote) {
-                    html = `<div class="tick-fall">F</div>` + html;
+                    html += `<div class="tick-fall">F</div>`;
                     fallCount++;
                 } else {
-                    html = `<div class="tick-neutral">-</div>` + html;
+                    html += `<div class="tick-neutral">-</div>`;
                 }
             }
             
@@ -1087,7 +1148,7 @@
         // ======================
         // Wait for everything to be ready
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait a bit more to ensure TradingView library is loaded
+            // Initialize after a short delay to ensure everything is loaded
             setTimeout(init, 500);
         });
     </script>
