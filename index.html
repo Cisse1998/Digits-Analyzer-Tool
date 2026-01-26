@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deriv Pro Chart - Advanced Trading Platform</title>
+    <title>Deriv Professional Chart</title>
     <style>
         :root {
             --background: #0a0b0e;
@@ -17,12 +17,6 @@
             --chart-bearish: #ef4444;
             --muted-foreground: #9ca3af;
             --grid-color: rgba(255, 255, 255, 0.1);
-            --volume-up: rgba(16, 185, 129, 0.3);
-            --volume-down: rgba(239, 68, 68, 0.3);
-            --indicator-1: #8b5cf6;
-            --indicator-2: #ec4899;
-            --indicator-3: #f59e0b;
-            --indicator-4: #10b981;
         }
 
         .light-mode {
@@ -37,16 +31,13 @@
             --chart-bearish: #ef4444;
             --muted-foreground: #64748b;
             --grid-color: rgba(0, 0, 0, 0.1);
-            --volume-up: rgba(16, 185, 129, 0.2);
-            --volume-down: rgba(239, 68, 68, 0.2);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            transition: background-color 0.3s, color 0.3s;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         body {
@@ -54,7 +45,6 @@
             color: var(--foreground);
             min-height: 100vh;
             padding: 20px;
-            line-height: 1.5;
         }
 
         .container {
@@ -65,57 +55,47 @@
         /* Header */
         .header {
             background: var(--card);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
             border: 1px solid var(--border);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
 
         .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         h1 {
-            font-size: 2.5rem;
+            font-size: 1.8rem;
             background: linear-gradient(90deg, #3b82f6, #8b5cf6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-weight: 700;
         }
 
         .status-bar {
             display: flex;
-            gap: 20px;
-            font-size: 14px;
+            gap: 15px;
         }
 
         .status {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
+            gap: 6px;
+            padding: 6px 12px;
             background: var(--secondary);
             border-radius: 20px;
-            border: 1px solid var(--border);
+            font-size: 14px;
         }
 
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-        }
-
-        .status-dot.connected {
             background-color: #10b981;
             animation: pulse 2s infinite;
-        }
-
-        .status-dot.disconnected {
-            background-color: #ef4444;
         }
 
         @keyframes pulse {
@@ -123,110 +103,71 @@
             50% { opacity: 0.5; }
         }
 
-        /* Trading Layout */
-        .trading-layout {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 24px;
-            height: calc(100vh - 200px);
-            min-height: 700px;
-        }
-
         /* Chart Container */
         .chart-container {
             background: var(--card);
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 0;
             border: 1px solid var(--border);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: column;
-            position: relative;
+            margin-bottom: 20px;
             overflow: hidden;
         }
 
-        /* Chart Header */
-        .chart-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border);
+        /* Chart Controls */
+        .chart-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: var(--secondary);
-        }
-
-        .symbol-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .symbol-controls {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .symbol-name {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .price-display {
-            font-size: 2rem;
-            font-weight: 800;
-            font-family: 'Courier New', monospace;
-        }
-
-        .price-up {
-            color: #10b981;
-        }
-
-        .price-down {
-            color: #ef4444;
-        }
-
-        .price-neutral {
-            color: var(--foreground);
-        }
-
-        /* Chart Canvas Area */
-        .chart-canvas-container {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            min-height: 0;
-        }
-
-        #mainChart {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        /* Timeframe Controls */
-        .timeframe-controls {
-            display: flex;
-            gap: 4px;
-            padding: 12px 24px;
+            padding: 15px 20px;
             border-bottom: 1px solid var(--border);
             background: var(--secondary);
         }
 
-        .timeframe-btn {
+        .left-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-type-btn {
             padding: 8px 16px;
-            background: transparent;
+            background: var(--background);
             border: 1px solid var(--border);
             color: var(--foreground);
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .timeframe-btn:hover {
+        .chart-type-btn.active {
+            background: var(--primary);
+            color: var(--primary-foreground);
+            border-color: var(--primary);
+        }
+
+        .separator {
+            width: 1px;
+            height: 20px;
             background: var(--border);
+            margin: 0 10px;
+        }
+
+        .timeframe-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .timeframe-btn {
+            padding: 6px 12px;
+            background: var(--background);
+            border: 1px solid var(--border);
+            color: var(--foreground);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
         }
 
         .timeframe-btn.active {
@@ -235,864 +176,819 @@
             border-color: var(--primary);
         }
 
-        /* Indicator Controls */
-        .indicator-controls {
-            padding: 16px 24px;
+        /* Right Controls */
+        .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .tick-indicator {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(59, 130, 246, 0.1);
+            border: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+
+        .tick-indicator.up {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: #10b981;
+            color: #10b981;
+        }
+
+        .tick-indicator.down {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        /* Price Display */
+        .price-display {
+            padding: 15px 20px;
             border-bottom: 1px solid var(--border);
-            background: var(--secondary);
-        }
-
-        .indicator-selector {
             display: flex;
             align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
+            gap: 20px;
         }
 
-        .indicator-btn {
-            padding: 8px 16px;
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--foreground);
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
+        .symbol-info {
             display: flex;
             align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
+            gap: 10px;
         }
 
-        .indicator-btn:hover {
-            background: var(--border);
-        }
-
-        .indicator-btn.active {
-            background: var(--primary);
-            color: var(--primary-foreground);
-            border-color: var(--primary);
-        }
-
-        .indicator-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        /* Panel Styles */
-        .panel {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 24px;
-            border: 1px solid var(--border);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-        }
-
-        .panel h3 {
-            margin-bottom: 20px;
-            color: var(--foreground);
-            font-size: 18px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .panel h3:before {
-            content: '';
-            width: 4px;
-            height: 16px;
-            background: var(--primary);
-            border-radius: 2px;
-        }
-
-        /* Market Selection */
-        .market-selection {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .market-btn {
-            padding: 16px;
-            background: var(--secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .market-btn:hover {
-            background: var(--border);
-            transform: translateY(-2px);
-        }
-
-        .market-btn.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: var(--primary-foreground);
-        }
-
-        .market-name {
-            font-size: 14px;
+        .symbol-name {
+            font-size: 1.2rem;
             font-weight: 600;
         }
 
-        .market-price {
-            font-size: 18px;
+        .price-value {
+            font-size: 1.8rem;
             font-weight: 700;
             font-family: 'Courier New', monospace;
         }
 
-        /* Indicator Settings */
-        .indicator-settings {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .indicator-item {
-            background: var(--secondary);
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            border: 1px solid var(--border);
-        }
-
-        .indicator-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .indicator-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .indicator-controls-row {
-            display: flex;
-            gap: 8px;
-        }
-
-        .remove-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: var(--bearish);
-            border: none;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-
-        .indicator-params {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-        }
-
-        .param-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .param-label {
-            font-size: 12px;
-            color: var(--muted-foreground);
-        }
-
-        .param-input {
-            padding: 8px;
-            background: var(--background);
-            border: 1px solid var(--border);
-            color: var(--foreground);
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        /* Statistics */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
-        .stat-item {
-            background: var(--secondary);
-            padding: 12px;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: var(--muted-foreground);
-        }
-
-        .stat-value {
-            font-size: 16px;
-            font-weight: 600;
-            font-family: 'Courier New', monospace;
-        }
-
-        .stat-value.positive {
+        .price-value.up {
             color: #10b981;
         }
 
-        .stat-value.negative {
+        .price-value.down {
             color: #ef4444;
+        }
+
+        .price-change {
+            font-size: 0.9rem;
+            color: var(--muted-foreground);
+        }
+
+        /* Chart Canvas */
+        .chart-canvas-container {
+            height: 500px;
+            position: relative;
+            background: var(--background);
+        }
+
+        #priceChart {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Indicators Panel */
+        .indicators-panel {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border);
+            background: var(--secondary);
+        }
+
+        .indicators-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .indicator-badge {
+            padding: 6px 12px;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .indicator-color {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* Loading */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--muted-foreground);
+            font-size: 14px;
         }
 
         /* Theme Toggle */
         .theme-toggle {
             position: fixed;
-            top: 24px;
-            right: 24px;
-            z-index: 1000;
+            top: 20px;
+            right: 20px;
         }
 
         .theme-btn {
-            width: 48px;
-            height: 48px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: var(--secondary);
-            border: 2px solid var(--border);
+            border: 1px solid var(--border);
             color: var(--foreground);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            transition: all 0.3s;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .theme-btn:hover {
-            transform: rotate(30deg);
-            background: var(--primary);
-            color: var(--primary-foreground);
-        }
-
-        /* Loading Spinner */
-        .loading-spinner {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        /* Responsive */
-        @media (max-width: 1400px) {
-            .trading-layout {
-                grid-template-columns: 1fr;
-                height: auto;
-            }
-            
-            .market-selection {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        @media (max-width: 1024px) {
-            .header-top {
-                flex-direction: column;
-                gap: 20px;
-                align-items: flex-start;
-            }
-            
-            .status-bar {
-                width: 100%;
-                justify-content: space-between;
-            }
-            
-            .market-selection {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
-            .container {
-                padding: 0;
-            }
-            
-            .trading-layout {
-                gap: 16px;
-            }
-            
-            .panel {
-                padding: 16px;
-            }
-            
-            .chart-header {
-                padding: 16px;
-                flex-direction: column;
-                gap: 16px;
-                align-items: flex-start;
-            }
-            
-            .symbol-info {
-                width: 100%;
-                justify-content: space-between;
-            }
-            
-            .timeframe-controls {
-                overflow-x: auto;
-                padding: 8px 16px;
-            }
-            
-            .theme-toggle {
-                top: 16px;
-                right: 16px;
-            }
-            
-            .theme-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 20px;
-            }
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--secondary);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--muted-foreground);
-        }
-
-        /* Dropdown */
-        .dropdown {
-            position: relative;
-        }
-
-        .dropdown-btn {
-            padding: 10px 16px;
-            background: var(--secondary);
-            border: 1px solid var(--border);
-            color: var(--foreground);
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        .dropdown-content {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 200px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            display: none;
-        }
-
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
-
-        .dropdown-item {
-            padding: 12px 16px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .dropdown-item:hover {
-            background: var(--secondary);
         }
     </style>
 </head>
 <body>
     <!-- Theme Toggle -->
     <div class="theme-toggle">
-        <button class="theme-btn" id="themeToggle">
-            🌙
-        </button>
+        <button class="theme-btn" id="themeToggle">🌙</button>
     </div>
 
     <div class="container">
         <!-- Header -->
         <div class="header">
             <div class="header-top">
-                <h1>Deriv Pro Chart</h1>
+                <h1>Deriv Professional Chart</h1>
                 <div class="status-bar">
                     <div class="status">
-                        <span class="status-dot" id="wsStatus">●</span>
-                        <span>Live: <span id="connectionStatus">Connecting...</span></span>
+                        <span class="status-dot"></span>
+                        <span id="connectionStatus">Connected</span>
                     </div>
                     <div class="status">
                         <span>Symbol: <span id="currentSymbol">1HZ10V</span></span>
                     </div>
                     <div class="status">
-                        <span>Candles: <span id="candleCount">0</span></span>
-                    </div>
-                    <div class="status">
-                        <span>Tick Speed: <span id="tickSpeed">1s</span></span>
-                    </div>
-                </div>
-            </div>
-            <div class="symbol-controls">
-                <div class="dropdown">
-                    <button class="dropdown-btn">
-                        <span>Select Market</span>
-                        <span>▼</span>
-                    </button>
-                    <div class="dropdown-content" id="marketDropdown">
-                        <!-- Populated by JavaScript -->
+                        <span>Ticks: <span id="tickCount">0</span></span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Trading Layout -->
-        <div class="trading-layout">
-            <!-- Main Chart Area -->
-            <div class="chart-container">
-                <!-- Chart Header -->
-                <div class="chart-header">
-                    <div class="symbol-info">
-                        <div class="symbol-name" id="chartSymbol">1HZ10V</div>
-                        <div class="price-display price-neutral" id="currentPrice">--.--</div>
-                        <div class="price-change" id="priceChange">+0.00 (0.00%)</div>
+        <!-- Chart Container -->
+        <div class="chart-container">
+            <!-- Chart Controls -->
+            <div class="chart-controls">
+                <div class="left-controls">
+                    <button class="chart-type-btn active" id="candleBtn">
+                        <span>📊</span> Candles
+                    </button>
+                    <button class="chart-type-btn" id="lineBtn">
+                        <span>📈</span> Line
+                    </button>
+                    <div class="separator"></div>
+                    <div class="timeframe-controls">
+                        <button class="timeframe-btn active" data-timeframe="60">1M</button>
+                        <button class="timeframe-btn" data-timeframe="300">5M</button>
+                        <button class="timeframe-btn" data-timeframe="900">15M</button>
+                        <button class="timeframe-btn" data-timeframe="1800">30M</button>
+                        <button class="timeframe-btn" data-timeframe="3600">1H</button>
                     </div>
                 </div>
-
-                <!-- Timeframe Controls -->
-                <div class="timeframe-controls">
-                    <button class="timeframe-btn active" data-timeframe="60">1M</button>
-                    <button class="timeframe-btn" data-timeframe="300">5M</button>
-                    <button class="timeframe-btn" data-timeframe="900">15M</button>
-                    <button class="timeframe-btn" data-timeframe="1800">30M</button>
-                    <button class="timeframe-btn" data-timeframe="3600">1H</button>
-                    <button class="timeframe-btn" data-timeframe="86400">1D</button>
-                </div>
-
-                <!-- Indicator Controls -->
-                <div class="indicator-controls">
-                    <div class="indicator-selector">
-                        <button class="indicator-btn" data-indicator="sma">
-                            <span class="indicator-color" style="background: var(--indicator-1);"></span>
-                            SMA
-                        </button>
-                        <button class="indicator-btn" data-indicator="ema">
-                            <span class="indicator-color" style="background: var(--indicator-2);"></span>
-                            EMA
-                        </button>
-                        <button class="indicator-btn" data-indicator="bb">
-                            <span class="indicator-color" style="background: var(--indicator-3);"></span>
-                            Bollinger Bands
-                        </button>
-                        <button class="indicator-btn" data-indicator="rsi">
-                            <span class="indicator-color" style="background: var(--indicator-4);"></span>
-                            RSI
-                        </button>
-                        <button class="indicator-btn" data-indicator="cci">
-                            <span class="indicator-color" style="background: #3b82f6;"></span>
-                            CCI
-                        </button>
-                        <button class="indicator-btn" data-indicator="alma">
-                            <span class="indicator-color" style="background: #ec4899;"></span>
-                            ALMA
-                        </button>
-                        <button class="indicator-btn" data-indicator="macd">
-                            <span class="indicator-color" style="background: #f59e0b;"></span>
-                            MACD
-                        </button>
+                <div class="right-controls">
+                    <div class="tick-indicator" id="tickIndicator">-</div>
+                    <div>
+                        <div style="font-size: 12px; color: var(--muted-foreground);">Last Price</div>
+                        <div style="font-size: 16px; font-weight: 600;" id="lastPrice">--.--</div>
                     </div>
-                </div>
-
-                <!-- Chart Canvas -->
-                <div class="chart-canvas-container">
-                    <canvas id="mainChart"></canvas>
-                    <div class="loading-spinner" id="chartLoading"></div>
                 </div>
             </div>
 
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <!-- Market Selection -->
-                <div class="panel">
-                    <h3>Quick Markets</h3>
-                    <div class="market-selection" id="marketGrid">
-                        <!-- Populated by JavaScript -->
-                    </div>
+            <!-- Price Display -->
+            <div class="price-display">
+                <div class="symbol-info">
+                    <div class="symbol-name" id="symbolName">Volatility 10 (1s) Index</div>
+                    <div class="price-value" id="currentPrice">--.--</div>
+                    <div class="price-change" id="priceChange">+0.00 (0.00%)</div>
                 </div>
+            </div>
 
-                <!-- Active Indicators -->
-                <div class="panel">
-                    <h3>Active Indicators</h3>
-                    <div class="indicator-settings" id="indicatorSettings">
-                        <!-- Will be populated when indicators are added -->
-                        <div class="no-indicators" style="text-align: center; color: var(--muted-foreground); padding: 20px;">
-                            No indicators added. Click on indicator buttons above to add.
-                        </div>
-                    </div>
-                </div>
+            <!-- Chart Canvas -->
+            <div class="chart-canvas-container">
+                <canvas id="priceChart"></canvas>
+                <div class="loading" id="chartLoading">Loading chart data...</div>
+            </div>
 
-                <!-- Market Statistics -->
-                <div class="panel">
-                    <h3>Market Statistics</h3>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-label">24h High</div>
-                            <div class="stat-value positive" id="marketHigh">--.--</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">24h Low</div>
-                            <div class="stat-value negative" id="marketLow">--.--</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Current</div>
-                            <div class="stat-value" id="marketCurrent">--.--</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Change</div>
-                            <div class="stat-value" id="marketChange">0.00%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Connection Info -->
-                <div class="panel">
-                    <h3>Connection Info</h3>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-label">Status</div>
-                            <div class="stat-value" id="connectionStatusText">Connected</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Ticks</div>
-                            <div class="stat-value" id="ticksReceived">0</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Last Update</div>
-                            <div class="stat-value" id="lastUpdate">--:--:--</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Latency</div>
-                            <div class="stat-value" id="latency">0ms</div>
-                        </div>
-                    </div>
+            <!-- Indicators Panel -->
+            <div class="indicators-panel">
+                <div class="indicators-list" id="indicatorsList">
+                    <!-- Indicators will be added here -->
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ======================
-        // CONFIGURATION
-        // ======================
+        // Configuration
         const DERIV_WS_URL = 'wss://ws.binaryws.com/websockets/v3?app_id=1089';
         const MAX_CANDLES = 200;
-        const INDICATOR_COLORS = {
-            sma: '#8b5cf6',
-            ema: '#ec4899',
-            bb: '#f59e0b',
-            rsi: '#10b981',
-            cci: '#3b82f6',
-            alma: '#ec4899',
-            macd: '#f59e0b'
+        const MIN_VISIBLE_CANDLES = 50;
+        const ZOOM_STEP = 0.2;
+
+        // Supported symbols
+        const SYMBOLS = {
+            '1HZ10V': 'Volatility 10 (1s) Index',
+            'R_10': 'Volatility 10 Index',
+            '1HZ15V': 'Volatility 15 (1s) Index',
+            '1HZ25V': 'Volatility 25 (1s) Index',
+            'R_25': 'Volatility 25 Index',
+            '1HZ30V': 'Volatility 30 (1s) Index',
+            '1HZ50V': 'Volatility 50 (1s) Index',
+            'R_50': 'Volatility 50 Index',
+            '1HZ75V': 'Volatility 75 (1s) Index',
+            'R_75': 'Volatility 75 Index',
+            '1HZ90V': 'Volatility 90 (1s) Index',
+            '1HZ100V': 'Volatility 100 (1s) Index',
+            'R_100': 'Volatility 100 Index'
         };
 
-        // Available markets
-        const DERIV_MARKETS = {
-            '1HZ10V': { name: 'Volatility 10 (1s)', type: '1s', basePrice: 35000 },
-            'R_10': { name: 'Volatility 10', type: 'standard', basePrice: 35000 },
-            '1HZ15V': { name: 'Volatility 15 (1s)', type: '1s', basePrice: 35000 },
-            '1HZ25V': { name: 'Volatility 25 (1s)', type: '1s', basePrice: 35000 },
-            'R_25': { name: 'Volatility 25', type: 'standard', basePrice: 35000 },
-            '1HZ30V': { name: 'Volatility 30 (1s)', type: '1s', basePrice: 35000 },
-            '1HZ50V': { name: 'Volatility 50 (1s)', type: '1s', basePrice: 35000 },
-            'R_50': { name: 'Volatility 50', type: 'standard', basePrice: 35000 },
-            '1HZ75V': { name: 'Volatility 75 (1s)', type: '1s', basePrice: 35000 },
-            'R_75': { name: 'Volatility 75', type: 'standard', basePrice: 35000 },
-            '1HZ90V': { name: 'Volatility 90 (1s)', type: '1s', basePrice: 35000 },
-            '1HZ100V': { name: 'Volatility 100 (1s)', type: '1s', basePrice: 35000 },
-            'R_100': { name: 'Volatility 100', type: 'standard', basePrice: 35000 }
-        };
-
-        // ======================
-        // GLOBAL STATE
-        // ======================
+        // Global state
         let socket = null;
-        let isConnected = false;
         let activeSymbol = '1HZ10V';
-        let activeTimeframe = 60; // 1 minute in seconds
+        let activeTimeframe = 60;
+        let chartType = 'candlestick';
         let candles = [];
         let currentCandle = null;
-        let ticks = [];
         let currentPrice = 0;
         let previousPrice = 0;
-        let tickCount = 0;
-        let chart = null;
+        let ticks = [];
+        let zoomLevel = 1;
+        let panOffset = 0;
+        let indicators = new Set(['SMA', 'EMA', 'BB']);
         let ctx = null;
-        let currentTickSubscription = null;
-        let activeIndicators = new Map();
-        let indicatorCounter = 0;
+        let canvas = null;
 
-        // ======================
-        // THEME MANAGEMENT
-        // ======================
+        // Theme management
         function initTheme() {
-            const themeToggle = document.getElementById('themeToggle');
+            const themeBtn = document.getElementById('themeToggle');
             const savedTheme = localStorage.getItem('theme') || 'dark';
             
             if (savedTheme === 'light') {
                 document.body.classList.add('light-mode');
-                themeToggle.textContent = '🌙';
+                themeBtn.textContent = '🌙';
             } else {
-                themeToggle.textContent = '☀️';
+                themeBtn.textContent = '☀️';
             }
             
-            themeToggle.addEventListener('click', () => {
+            themeBtn.addEventListener('click', () => {
                 if (document.body.classList.contains('light-mode')) {
                     document.body.classList.remove('light-mode');
                     localStorage.setItem('theme', 'dark');
-                    themeToggle.textContent = '☀️';
+                    themeBtn.textContent = '☀️';
                 } else {
                     document.body.classList.add('light-mode');
                     localStorage.setItem('theme', 'light');
-                    themeToggle.textContent = '🌙';
+                    themeBtn.textContent = '🌙';
                 }
                 drawChart();
             });
         }
 
-        // ======================
-        // CHART INITIALIZATION
-        // ======================
+        // Initialize chart
         function initChart() {
-            const canvas = document.getElementById('mainChart');
-            if (!canvas) return;
+            canvas = document.getElementById('priceChart');
+            ctx = canvas.getContext('2d');
             
+            // Set canvas size
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
-            ctx = canvas.getContext('2d');
+            
+            // Event listeners
+            canvas.addEventListener('wheel', handleWheel);
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('mouseleave', handleMouseUp);
             
             // Initial draw
             drawChart();
         }
 
-        // ======================
-        // INDICATOR MANAGEMENT
-        // ======================
-        function addIndicator(type) {
-            const id = `indicator_${++indicatorCounter}_${type}`;
-            
-            const defaultParams = {
-                sma: { period: 20 },
-                ema: { period: 12 },
-                bb: { period: 20, stdDev: 2 },
-                rsi: { period: 14 },
-                cci: { period: 20 },
-                alma: { period: 10, offset: 0.85, sigma: 6 },
-                macd: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 }
-            };
-            
-            activeIndicators.set(id, {
-                type,
-                params: { ...defaultParams[type] },
-                visible: true,
-                color: INDICATOR_COLORS[type]
-            });
-            
-            updateIndicatorUI();
-            drawChart();
-        }
+        // Handle zoom and pan
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartOffset = 0;
 
-        function removeIndicator(id) {
-            activeIndicators.delete(id);
-            updateIndicatorUI();
-            drawChart();
-        }
-
-        function updateIndicatorParams(id, param, value) {
-            const indicator = activeIndicators.get(id);
-            if (indicator) {
-                indicator.params[param] = parseFloat(value) || value;
-                drawChart();
+        function handleWheel(e) {
+            e.preventDefault();
+            
+            if (e.ctrlKey || e.metaKey) {
+                // Zoom
+                if (e.deltaY < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
+                }
+            } else {
+                // Pan
+                panOffset = Math.max(0, Math.min(
+                    panOffset - e.deltaY * 0.5,
+                    Math.max(0, candles.length - getVisibleCandleCount())
+                ));
             }
+            
+            drawChart();
         }
 
-        function updateIndicatorUI() {
-            const container = document.getElementById('indicatorSettings');
+        function handleMouseDown(e) {
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartOffset = panOffset;
+        }
+
+        function handleMouseMove(e) {
+            if (!isDragging) return;
             
-            if (activeIndicators.size === 0) {
-                container.innerHTML = `
-                    <div class="no-indicators" style="text-align: center; color: var(--muted-foreground); padding: 20px;">
-                        No indicators added. Click on indicator buttons above to add.
-                    </div>
-                `;
+            const deltaX = e.clientX - dragStartX;
+            const pixelToCandleRatio = getVisibleCandleCount() / canvas.width;
+            panOffset = Math.max(0, Math.min(
+                dragStartOffset - deltaX * pixelToCandleRatio,
+                Math.max(0, candles.length - getVisibleCandleCount())
+            ));
+            
+            drawChart();
+        }
+
+        function handleMouseUp() {
+            isDragging = false;
+        }
+
+        function zoomIn() {
+            zoomLevel = Math.min(zoomLevel + ZOOM_STEP, candles.length / MIN_VISIBLE_CANDLES);
+        }
+
+        function zoomOut() {
+            zoomLevel = Math.max(zoomLevel - ZOOM_STEP, 1);
+        }
+
+        function getVisibleCandleCount() {
+            return Math.max(MIN_VISIBLE_CANDLES, Math.floor(candles.length / zoomLevel));
+        }
+
+        // Chart drawing
+        function drawChart() {
+            if (!ctx || !canvas) return;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (candles.length === 0) {
+                drawNoData();
                 return;
             }
             
-            let html = '';
-            activeIndicators.forEach((indicator, id) => {
-                html += createIndicatorHTML(id, indicator);
-            });
-            container.innerHTML = html;
+            // Calculate visible range
+            const visibleCount = getVisibleCandleCount();
+            const startIndex = Math.max(0, Math.floor(panOffset));
+            const endIndex = Math.min(startIndex + visibleCount, candles.length);
+            const visibleCandles = candles.slice(startIndex, endIndex);
             
-            // Add event listeners
-            activeIndicators.forEach((indicator, id) => {
-                Object.keys(indicator.params).forEach(param => {
-                    const input = document.querySelector(`[data-indicator="${id}"][data-param="${param}"]`);
-                    if (input) {
-                        input.addEventListener('input', (e) => {
-                            updateIndicatorParams(id, param, e.target.value);
-                        });
+            if (visibleCandles.length === 0) return;
+            
+            // Calculate price range
+            const priceRange = getPriceRange(visibleCandles);
+            
+            // Draw grid
+            drawGrid(priceRange, visibleCandles.length);
+            
+            // Draw indicators
+            drawIndicators(visibleCandles, priceRange, startIndex);
+            
+            // Draw candles or line
+            if (chartType === 'candlestick') {
+                drawCandlesticks(visibleCandles, priceRange);
+            } else {
+                drawLineChart(visibleCandles, priceRange);
+            }
+            
+            // Draw current price line
+            if (currentPrice > 0) {
+                drawCurrentPriceLine(priceRange);
+            }
+            
+            // Draw axes
+            drawAxes(priceRange, visibleCandles);
+        }
+
+        function getPriceRange(candles) {
+            let min = Infinity;
+            let max = -Infinity;
+            
+            candles.forEach(candle => {
+                min = Math.min(min, candle.low);
+                max = Math.max(max, candle.high);
+            });
+            
+            // Add indicators to range
+            if (indicators.has('SMA')) {
+                const sma = calculateSMA(candles, 20);
+                sma.forEach(val => {
+                    if (val) {
+                        min = Math.min(min, val);
+                        max = Math.max(max, val);
                     }
                 });
+            }
+            
+            if (indicators.has('EMA')) {
+                const ema = calculateEMA(candles, 20);
+                ema.forEach(val => {
+                    if (val) {
+                        min = Math.min(min, val);
+                        max = Math.max(max, val);
+                    }
+                });
+            }
+            
+            if (indicators.has('BB')) {
+                const bb = calculateBollingerBands(candles, 20, 2);
+                bb.upper.forEach((val, i) => {
+                    if (val && bb.lower[i]) {
+                        min = Math.min(min, bb.lower[i]);
+                        max = Math.max(max, val);
+                    }
+                });
+            }
+            
+            // Add padding
+            const padding = (max - min) * 0.1;
+            return {
+                min: min - padding,
+                max: max + padding
+            };
+        }
+
+        function drawGrid(priceRange, candleCount) {
+            const padding = { left: 70, right: 20, top: 30, bottom: 40 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            const chartHeight = canvas.height - padding.top - padding.bottom;
+            
+            // Grid lines
+            ctx.strokeStyle = document.body.classList.contains('light-mode') 
+                ? 'rgba(0, 0, 0, 0.1)' 
+                : 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            
+            // Horizontal grid lines
+            for (let i = 0; i <= 10; i++) {
+                const y = padding.top + (i * chartHeight / 10);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + chartWidth, y);
+                ctx.stroke();
+            }
+            
+            // Vertical grid lines
+            for (let i = 0; i <= 10; i++) {
+                const x = padding.left + (i * chartWidth / 10);
+                ctx.beginPath();
+                ctx.moveTo(x, padding.top);
+                ctx.lineTo(x, padding.top + chartHeight);
+                ctx.stroke();
+            }
+            
+            // Price labels
+            ctx.fillStyle = document.body.classList.contains('light-mode') ? '#666' : '#aaa';
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.textAlign = 'right';
+            
+            for (let i = 0; i <= 10; i++) {
+                const price = priceRange.max - (priceRange.max - priceRange.min) * i / 10;
+                const y = padding.top + (i * chartHeight / 10);
+                ctx.fillText(price.toFixed(2), padding.left - 10, y + 4);
+            }
+            
+            // Time labels
+            ctx.textAlign = 'center';
+            for (let i = 0; i <= 5; i++) {
+                const index = Math.floor((i / 5) * (candleCount - 1));
+                if (index < 0 || index >= candleCount) continue;
                 
-                const removeBtn = document.querySelector(`[data-remove="${id}"]`);
-                if (removeBtn) {
-                    removeBtn.addEventListener('click', () => removeIndicator(id));
-                }
-            });
-        }
-
-        function createIndicatorHTML(id, indicator) {
-            const paramsHTML = Object.entries(indicator.params).map(([key, value]) => `
-                <div class="param-group">
-                    <div class="param-label">${key.toUpperCase()}</div>
-                    <input type="number" class="param-input" 
-                           data-indicator="${id}" data-param="${key}"
-                           value="${value}" min="1" max="100" step="1">
-                </div>
-            `).join('');
-            
-            return `
-                <div class="indicator-item">
-                    <div class="indicator-header">
-                        <div class="indicator-title">
-                            <span class="indicator-color" style="background: ${indicator.color};"></span>
-                            ${indicator.type.toUpperCase()}
-                        </div>
-                        <div class="indicator-controls-row">
-                            <button class="remove-btn" data-remove="${id}">×</button>
-                        </div>
-                    </div>
-                    <div class="indicator-params">
-                        ${paramsHTML}
-                    </div>
-                </div>
-            `;
-        }
-
-        // ======================
-        // INDICATOR CALCULATIONS
-        // ======================
-        function calculateIndicator(data, indicator) {
-            const candles = [...data];
-            if (currentCandle) candles.push(currentCandle);
-            
-            switch (indicator.type) {
-                case 'sma':
-                    return calculateSMA(candles, indicator.params.period);
-                case 'ema':
-                    return calculateEMA(candles, indicator.params.period);
-                case 'bb':
-                    return calculateBollingerBands(candles, indicator.params.period, indicator.params.stdDev);
-                case 'rsi':
-                    return calculateRSI(candles, indicator.params.period);
-                case 'cci':
-                    return calculateCCI(candles, indicator.params.period);
-                case 'alma':
-                    return calculateALMA(candles, indicator.params.period, indicator.params.offset, indicator.params.sigma);
-                case 'macd':
-                    return calculateMACD(candles, indicator.params.fastPeriod, indicator.params.slowPeriod, indicator.params.signalPeriod);
-                default:
-                    return [];
+                const x = padding.left + (i * chartWidth / 5);
+                const time = new Date(candles[Math.floor(panOffset) + index].time);
+                const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
+                ctx.fillText(timeStr, x, chartHeight + padding.top + 20);
             }
         }
 
-        function calculateSMA(candles, period) {
-            if (candles.length < period) return [];
+        function drawIndicators(candles, priceRange, startIndex) {
+            const padding = { left: 70, right: 20, top: 30, bottom: 40 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            const chartHeight = canvas.height - padding.top - padding.bottom;
             
-            const sma = [];
+            // Bollinger Bands
+            if (indicators.has('BB')) {
+                const bb = calculateBollingerBands(candles, 20, 2);
+                
+                // Fill between bands
+                ctx.fillStyle = document.body.classList.contains('light-mode') 
+                    ? 'rgba(139, 92, 246, 0.1)' 
+                    : 'rgba(139, 92, 246, 0.15)';
+                ctx.beginPath();
+                
+                for (let i = 0; i < candles.length; i++) {
+                    const x = padding.left + (i * chartWidth / (candles.length - 1));
+                    const y = padding.top + chartHeight - ((bb.upper[i] - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                
+                for (let i = candles.length - 1; i >= 0; i--) {
+                    const x = padding.left + (i * chartWidth / (candles.length - 1));
+                    const y = padding.top + chartHeight - ((bb.lower[i] - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                    ctx.lineTo(x, y);
+                }
+                
+                ctx.closePath();
+                ctx.fill();
+                
+                // Draw bands
+                ctx.strokeStyle = '#8b5cf6';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 2]);
+                
+                // Upper band
+                ctx.beginPath();
+                for (let i = 0; i < candles.length; i++) {
+                    const x = padding.left + (i * chartWidth / (candles.length - 1));
+                    const y = padding.top + chartHeight - ((bb.upper[i] - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                
+                // Middle band
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                for (let i = 0; i < candles.length; i++) {
+                    const x = padding.left + (i * chartWidth / (candles.length - 1));
+                    const y = padding.top + chartHeight - ((bb.middle[i] - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                
+                // Lower band
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 2]);
+                ctx.beginPath();
+                for (let i = 0; i < candles.length; i++) {
+                    const x = padding.left + (i * chartWidth / (candles.length - 1));
+                    const y = padding.top + chartHeight - ((bb.lower[i] - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                
+                ctx.setLineDash([]);
+            }
+            
+            // SMA
+            if (indicators.has('SMA')) {
+                const sma = calculateSMA(candles, 20);
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i < candles.length; i++) {
+                    if (!sma[i]) continue;
+                    
+                    const x = padding.left + (i * chartWidth / (candles.length - 1));
+                    const y = padding.top + chartHeight - ((sma[i] - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                    
+                    if (i === 0 || !sma[i-1]) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            
+            // EMA
+            if (indicators.has('EMA')) {
+                const ema = calculateEMA(candles, 20);
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i < candles.length; i++) {
+                    if (!ema[i]) continue;
+                    
+                    const x = padding.left + (i * chartWidth / (candles.length - 1));
+                    const y = padding.top + chartHeight - ((ema[i] - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                    
+                    if (i === 0 || !ema[i-1]) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            
+            // ALMA
+            if (indicators.has('ALMA')) {
+                const alma = calculateALMA(candles, 9);
+                ctx.strokeStyle = '#ec4899';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i < candles.length; i++) {
+                    if (!alma[i]) continue;
+                    
+                    const x = padding.left + (i * chartWidth / (candles.length - 1));
+                    const y = padding.top + chartHeight - ((alma[i] - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                    
+                    if (i === 0 || !alma[i-1]) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function drawCandlesticks(candles, priceRange) {
+            const padding = { left: 70, right: 20, top: 30, bottom: 40 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            const chartHeight = canvas.height - padding.top - padding.bottom;
+            
+            const candleWidth = Math.max(2, Math.min(20, chartWidth / candles.length * 0.7));
+            
+            for (let i = 0; i < candles.length; i++) {
+                const candle = candles[i];
+                const isBullish = candle.close >= candle.open;
+                const color = isBullish ? '#10b981' : '#ef4444';
+                
+                // Calculate positions
+                const x = padding.left + (i * chartWidth / (candles.length - 1)) + (chartWidth / candles.length / 2);
+                const openY = padding.top + chartHeight - ((candle.open - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                const closeY = padding.top + chartHeight - ((candle.close - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                const highY = padding.top + chartHeight - ((candle.high - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                const lowY = padding.top + chartHeight - ((candle.low - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                
+                // Draw wick
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x, highY);
+                ctx.lineTo(x, Math.min(openY, closeY));
+                ctx.moveTo(x, Math.max(openY, closeY));
+                ctx.lineTo(x, lowY);
+                ctx.stroke();
+                
+                // Draw body
+                ctx.fillStyle = color;
+                const bodyTop = Math.min(openY, closeY);
+                const bodyHeight = Math.max(Math.abs(closeY - openY), 1);
+                ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
+                ctx.strokeRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
+            }
+        }
+
+        function drawLineChart(candles, priceRange) {
+            const padding = { left: 70, right: 20, top: 30, bottom: 40 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            const chartHeight = canvas.height - padding.top - padding.bottom;
+            
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (let i = 0; i < candles.length; i++) {
+                const x = padding.left + (i * chartWidth / (candles.length - 1));
+                const y = padding.top + chartHeight - ((candles[i].close - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Draw dots at data points
+            ctx.fillStyle = '#3b82f6';
+            for (let i = 0; i < candles.length; i += Math.max(1, Math.floor(candles.length / 10))) {
+                const x = padding.left + (i * chartWidth / (candles.length - 1));
+                const y = padding.top + chartHeight - ((candles[i].close - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawCurrentPriceLine(priceRange) {
+            const padding = { left: 70, right: 20, top: 30, bottom: 40 };
+            const chartHeight = canvas.height - padding.top - padding.bottom;
+            
+            const y = padding.top + chartHeight - ((currentPrice - priceRange.min) / (priceRange.max - priceRange.min)) * chartHeight;
+            
+            ctx.strokeStyle = currentPrice > previousPrice ? '#10b981' : '#ef4444';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            
+            ctx.beginPath();
+            ctx.moveTo(padding.left, y);
+            ctx.lineTo(canvas.width - padding.right, y);
+            ctx.stroke();
+            
+            ctx.setLineDash([]);
+            
+            // Draw price label
+            ctx.fillStyle = currentPrice > previousPrice ? '#10b981' : '#ef4444';
+            ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(currentPrice.toFixed(2), canvas.width - 10, y + 4);
+        }
+
+        function drawAxes(priceRange, candles) {
+            const padding = { left: 70, right: 20, top: 30, bottom: 40 };
+            
+            // Y-axis line
+            ctx.strokeStyle = document.body.classList.contains('light-mode') ? '#000' : '#fff';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top);
+            ctx.lineTo(padding.left, canvas.height - padding.bottom);
+            ctx.stroke();
+            
+            // X-axis line
+            ctx.beginPath();
+            ctx.moveTo(padding.left, canvas.height - padding.bottom);
+            ctx.lineTo(canvas.width - padding.right, canvas.height - padding.bottom);
+            ctx.stroke();
+        }
+
+        function drawNoData() {
+            ctx.fillStyle = document.body.classList.contains('light-mode') ? '#666' : '#999';
+            ctx.font = '16px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Waiting for market data...', canvas.width / 2, canvas.height / 2);
+        }
+
+        // Indicator calculations
+        function calculateSMA(candles, period) {
+            if (candles.length < period) return new Array(candles.length).fill(null);
+            
+            const sma = new Array(candles.length).fill(null);
             for (let i = period - 1; i < candles.length; i++) {
                 let sum = 0;
                 for (let j = 0; j < period; j++) {
                     sum += candles[i - j].close;
                 }
-                sma.push({
-                    time: candles[i].time,
-                    value: sum / period
-                });
+                sma[i] = sum / period;
             }
             return sma;
         }
 
         function calculateEMA(candles, period) {
-            if (candles.length < period) return [];
+            if (candles.length < period) return new Array(candles.length).fill(null);
             
             const multiplier = 2 / (period + 1);
             let ema = candles[0].close;
-            const emaValues = [{ time: candles[0].time, value: ema }];
+            const emaValues = new Array(candles.length).fill(null);
+            emaValues[0] = ema;
             
             for (let i = 1; i < candles.length; i++) {
                 ema = (candles[i].close - ema) * multiplier + ema;
-                emaValues.push({
-                    time: candles[i].time,
-                    value: ema
-                });
+                emaValues[i] = ema;
             }
             return emaValues;
         }
 
         function calculateBollingerBands(candles, period, stdDev) {
-            if (candles.length < period) return [];
+            if (candles.length < period) {
+                return {
+                    upper: new Array(candles.length).fill(null),
+                    middle: new Array(candles.length).fill(null),
+                    lower: new Array(candles.length).fill(null)
+                };
+            }
             
-            const bands = [];
+            const upper = new Array(candles.length).fill(null);
+            const middle = new Array(candles.length).fill(null);
+            const lower = new Array(candles.length).fill(null);
+            
             for (let i = period - 1; i < candles.length; i++) {
                 // Calculate SMA
                 let sum = 0;
@@ -1108,99 +1004,23 @@
                 }
                 const std = Math.sqrt(variance / period);
                 
-                bands.push({
-                    time: candles[i].time,
-                    upper: sma + (std * stdDev),
-                    middle: sma,
-                    lower: sma - (std * stdDev)
-                });
+                upper[i] = sma + (std * stdDev);
+                middle[i] = sma;
+                lower[i] = sma - (std * stdDev);
             }
-            return bands;
+            
+            return { upper, middle, lower };
         }
 
-        function calculateRSI(candles, period) {
-            if (candles.length < period + 1) return [];
+        function calculateALMA(candles, period) {
+            if (candles.length < period) return new Array(candles.length).fill(null);
             
-            let gains = [];
-            let losses = [];
-            
-            // Calculate initial gains and losses
-            for (let i = 1; i <= period; i++) {
-                const change = candles[i].close - candles[i-1].close;
-                gains.push(Math.max(0, change));
-                losses.push(Math.max(0, -change));
-            }
-            
-            let avgGain = gains.reduce((a, b) => a + b) / period;
-            let avgLoss = losses.reduce((a, b) => a + b) / period;
-            
-            const rsiValues = [{
-                time: candles[period].time,
-                value: avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss))
-            }];
-            
-            // Calculate subsequent RSI values
-            for (let i = period + 1; i < candles.length; i++) {
-                const change = candles[i].close - candles[i-1].close;
-                const gain = Math.max(0, change);
-                const loss = Math.max(0, -change);
-                
-                avgGain = ((avgGain * (period - 1)) + gain) / period;
-                avgLoss = ((avgLoss * (period - 1)) + loss) / period;
-                
-                const rs = avgGain / avgLoss;
-                const rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));
-                
-                rsiValues.push({
-                    time: candles[i].time,
-                    value: rsi
-                });
-            }
-            
-            return rsiValues;
-        }
-
-        function calculateCCI(candles, period) {
-            if (candles.length < period) return [];
-            
-            const cciValues = [];
-            for (let i = period - 1; i < candles.length; i++) {
-                // Calculate typical price
-                let sumTypical = 0;
-                for (let j = 0; j < period; j++) {
-                    const candle = candles[i - j];
-                    sumTypical += (candle.high + candle.low + candle.close) / 3;
-                }
-                const typicalPrice = sumTypical / period;
-                
-                // Calculate mean deviation
-                let sumDeviation = 0;
-                for (let j = 0; j < period; j++) {
-                    const candle = candles[i - j];
-                    const typical = (candle.high + candle.low + candle.close) / 3;
-                    sumDeviation += Math.abs(typical - typicalPrice);
-                }
-                const meanDeviation = sumDeviation / period;
-                
-                // Calculate CCI
-                const currentTypical = (candles[i].high + candles[i].low + candles[i].close) / 3;
-                const cci = meanDeviation === 0 ? 0 : (currentTypical - typicalPrice) / (0.015 * meanDeviation);
-                
-                cciValues.push({
-                    time: candles[i].time,
-                    value: cci
-                });
-            }
-            
-            return cciValues;
-        }
-
-        function calculateALMA(candles, period, offset, sigma) {
-            if (candles.length < period) return [];
-            
-            const almaValues = [];
+            const offset = 0.85;
+            const sigma = 6;
             const m = Math.floor(offset * (period - 1));
             const s = period / sigma;
+            
+            const alma = new Array(candles.length).fill(null);
             
             for (let i = period - 1; i < candles.length; i++) {
                 let sum = 0;
@@ -1212,642 +1032,58 @@
                     weightSum += weight;
                 }
                 
-                almaValues.push({
-                    time: candles[i].time,
-                    value: sum / weightSum
-                });
+                alma[i] = sum / weightSum;
             }
             
-            return almaValues;
+            return alma;
         }
 
-        function calculateMACD(candles, fastPeriod, slowPeriod, signalPeriod) {
-            if (candles.length < slowPeriod) return [];
-            
-            // Calculate EMAs
-            const fastMultiplier = 2 / (fastPeriod + 1);
-            const slowMultiplier = 2 / (slowPeriod + 1);
-            
-            let fastEMA = candles[0].close;
-            let slowEMA = candles[0].close;
-            
-            const macdLine = [];
-            const signalLine = [];
-            
-            for (let i = 1; i < candles.length; i++) {
-                fastEMA = (candles[i].close - fastEMA) * fastMultiplier + fastEMA;
-                slowEMA = (candles[i].close - slowEMA) * slowMultiplier + slowEMA;
-                
-                if (i >= slowPeriod - 1) {
-                    const macd = fastEMA - slowEMA;
-                    macdLine.push({
-                        time: candles[i].time,
-                        value: macd
-                    });
-                }
-            }
-            
-            // Calculate signal line (EMA of MACD)
-            if (macdLine.length >= signalPeriod) {
-                let signalEMA = macdLine[0].value;
-                const signalMultiplier = 2 / (signalPeriod + 1);
-                
-                signalLine.push({
-                    time: macdLine[0].time,
-                    value: signalEMA
-                });
-                
-                for (let i = 1; i < macdLine.length; i++) {
-                    signalEMA = (macdLine[i].value - signalEMA) * signalMultiplier + signalEMA;
-                    signalLine.push({
-                        time: macdLine[i].time,
-                        value: signalEMA
-                    });
-                }
-            }
-            
-            return { macdLine, signalLine };
-        }
-
-        // ======================
-        // CHART RENDERING
-        // ======================
-        function drawChart() {
-            if (!ctx) return;
-            
-            const canvas = document.getElementById('mainChart');
-            const width = canvas.width;
-            const height = canvas.height;
-            
-            // Clear canvas
-            ctx.clearRect(0, 0, width, height);
-            
-            if (candles.length === 0) {
-                drawNoData();
-                return;
-            }
-            
-            // Calculate dimensions
-            const padding = {
-                top: 60,
-                right: 80,
-                bottom: 120,
-                left: 80
-            };
-            
-            const chartWidth = width - padding.left - padding.right;
-            const chartHeight = height - padding.top - padding.bottom;
-            
-            // Get all data (candles + current candle)
-            const allCandles = [...candles];
-            if (currentCandle) allCandles.push(currentCandle);
-            
-            if (allCandles.length === 0) {
-                drawNoData();
-                return;
-            }
-            
-            // Find price range
-            let minPrice = Infinity;
-            let maxPrice = -Infinity;
-            
-            allCandles.forEach(candle => {
-                minPrice = Math.min(minPrice, candle.low);
-                maxPrice = Math.max(maxPrice, candle.high);
-            });
-            
-            // Add indicator values to range
-            activeIndicators.forEach(indicator => {
-                const indicatorData = calculateIndicator(allCandles, indicator);
-                if (Array.isArray(indicatorData)) {
-                    indicatorData.forEach(item => {
-                        if (item.value !== undefined) {
-                            minPrice = Math.min(minPrice, item.value);
-                            maxPrice = Math.max(maxPrice, item.value);
-                        } else if (item.upper !== undefined) {
-                            minPrice = Math.min(minPrice, item.lower);
-                            maxPrice = Math.max(maxPrice, item.upper);
-                        }
-                    });
-                } else if (indicatorData.macdLine) {
-                    [...indicatorData.macdLine, ...indicatorData.signalLine].forEach(item => {
-                        minPrice = Math.min(minPrice, item.value);
-                        maxPrice = Math.max(maxPrice, item.value);
-                    });
-                }
-            });
-            
-            // Add padding to price range
-            const priceRange = maxPrice - minPrice;
-            minPrice -= priceRange * 0.05;
-            maxPrice += priceRange * 0.05;
-            
-            // Draw background
-            drawBackground(padding, chartWidth, chartHeight);
-            
-            // Draw grid
-            drawGrid(padding, chartWidth, chartHeight);
-            
-            // Draw axes
-            drawAxes(padding, chartWidth, chartHeight);
-            
-            // Draw price labels
-            drawPriceLabels(padding, chartWidth, chartHeight, minPrice, maxPrice);
-            
-            // Draw time labels
-            drawTimeLabels(padding, chartWidth, chartHeight, allCandles);
-            
-            // Draw volume if needed
-            // drawVolume(padding, chartWidth, chartHeight, allCandles);
-            
-            // Draw indicators
-            drawIndicators(padding, chartWidth, chartHeight, minPrice, maxPrice, allCandles);
-            
-            // Draw candlesticks
-            drawCandlesticks(padding, chartWidth, chartHeight, minPrice, maxPrice, allCandles);
-            
-            // Draw current price line
-            if (currentPrice > 0) {
-                drawCurrentPriceLine(padding, chartWidth, chartHeight, minPrice, maxPrice);
-            }
-            
-            // Draw chart title
-            drawChartTitle();
-        }
-
-        function drawBackground(padding, chartWidth, chartHeight) {
-            ctx.fillStyle = document.body.classList.contains('light-mode') ? '#ffffff' : '#111827';
-            ctx.fillRect(padding.left, padding.top, chartWidth, chartHeight);
-        }
-
-        function drawGrid(padding, chartWidth, chartHeight) {
-            ctx.strokeStyle = document.body.classList.contains('light-mode') ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-            ctx.lineWidth = 1;
-            
-            // Vertical grid lines
-            for (let i = 0; i <= 10; i++) {
-                const x = padding.left + (i * chartWidth / 10);
-                ctx.beginPath();
-                ctx.moveTo(x, padding.top);
-                ctx.lineTo(x, padding.top + chartHeight);
-                ctx.stroke();
-            }
-            
-            // Horizontal grid lines
-            for (let i = 0; i <= 10; i++) {
-                const y = padding.top + (i * chartHeight / 10);
-                ctx.beginPath();
-                ctx.moveTo(padding.left, y);
-                ctx.lineTo(padding.left + chartWidth, y);
-                ctx.stroke();
-            }
-        }
-
-        function drawAxes(padding, chartWidth, chartHeight) {
-            ctx.strokeStyle = document.body.classList.contains('light-mode') ? '#000000' : '#ffffff';
-            ctx.lineWidth = 2;
-            
-            // Y-axis
-            ctx.beginPath();
-            ctx.moveTo(padding.left, padding.top);
-            ctx.lineTo(padding.left, padding.top + chartHeight);
-            ctx.stroke();
-            
-            // X-axis
-            ctx.beginPath();
-            ctx.moveTo(padding.left, padding.top + chartHeight);
-            ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
-            ctx.stroke();
-        }
-
-        function drawPriceLabels(padding, chartWidth, chartHeight, minPrice, maxPrice) {
-            ctx.fillStyle = document.body.classList.contains('light-mode') ? '#666666' : '#cccccc';
-            ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'middle';
-            
-            for (let i = 0; i <= 10; i++) {
-                const price = maxPrice - ((maxPrice - minPrice) * i / 10);
-                const y = padding.top + (i * chartHeight / 10);
-                
-                ctx.fillText(price.toFixed(2), padding.left - 10, y);
-            }
-        }
-
-        function drawTimeLabels(padding, chartWidth, chartHeight, candles) {
-            if (candles.length === 0) return;
-            
-            ctx.fillStyle = document.body.classList.contains('light-mode') ? '#666666' : '#cccccc';
-            ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            
-            const labels = 8;
-            const interval = Math.max(1, Math.floor(candles.length / labels));
-            
-            for (let i = 0; i < candles.length; i += interval) {
-                const x = padding.left + (i * chartWidth / (candles.length - 1));
-                const time = new Date(candles[i].time);
-                
-                let timeString;
-                if (activeTimeframe <= 3600) { // Intraday
-                    timeString = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
-                } else { // Daily or higher
-                    timeString = `${time.getDate().toString().padStart(2, '0')}/${(time.getMonth() + 1).toString().padStart(2, '0')}`;
-                }
-                
-                ctx.fillText(timeString, x, padding.top + chartHeight + 20);
-            }
-        }
-
-        function drawCandlesticks(padding, chartWidth, chartHeight, minPrice, maxPrice, candles) {
-            if (candles.length === 0) return;
-            
-            const candleWidth = Math.max(2, Math.min(20, chartWidth / candles.length * 0.7));
-            
-            for (let i = 0; i < candles.length; i++) {
-                const candle = candles[i];
-                const isCurrent = (i === candles.length - 1 && candle === currentCandle);
-                
-                // Calculate position
-                const x = padding.left + (i * chartWidth / candles.length) + (chartWidth / candles.length / 2);
-                
-                // Calculate Y positions
-                const openY = padding.top + chartHeight - ((candle.open - minPrice) / (maxPrice - minPrice)) * chartHeight;
-                const closeY = padding.top + chartHeight - ((candle.close - minPrice) / (maxPrice - minPrice)) * chartHeight;
-                const highY = padding.top + chartHeight - ((candle.high - minPrice) / (maxPrice - minPrice)) * chartHeight;
-                const lowY = padding.top + chartHeight - ((candle.low - minPrice) / (maxPrice - minPrice)) * chartHeight;
-                
-                // Determine if bullish or bearish
-                const isBullish = candle.close >= candle.open;
-                
-                // Set colors
-                const bodyColor = isBullish ? '#10b981' : '#ef4444';
-                const wickColor = isBullish ? '#10b981' : '#ef4444';
-                
-                // Draw wick (high-low line)
-                ctx.strokeStyle = wickColor;
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(x, highY);
-                ctx.lineTo(x, lowY);
-                ctx.stroke();
-                
-                // Draw body (open-close rectangle)
-                const bodyHeight = Math.max(1, Math.abs(closeY - openY));
-                const bodyY = Math.min(openY, closeY);
-                
-                ctx.fillStyle = bodyColor;
-                ctx.fillRect(x - candleWidth / 2, bodyY, candleWidth, bodyHeight);
-                
-                // Draw body border
-                ctx.strokeStyle = bodyColor;
-                ctx.lineWidth = 1;
-                ctx.strokeRect(x - candleWidth / 2, bodyY, candleWidth, bodyHeight);
-                
-                // Highlight current candle
-                if (isCurrent) {
-                    ctx.strokeStyle = isBullish ? '#10b981' : '#ef4444';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([5, 3]);
-                    ctx.strokeRect(x - candleWidth / 2 - 2, bodyY - 2, candleWidth + 4, bodyHeight + 4);
-                    ctx.setLineDash([]);
-                }
-            }
-        }
-
-        function drawIndicators(padding, chartWidth, chartHeight, minPrice, maxPrice, candles) {
-            activeIndicators.forEach(indicator => {
-                const indicatorData = calculateIndicator(candles, indicator);
-                
-                if (!indicatorData || (Array.isArray(indicatorData) && indicatorData.length === 0)) {
-                    return;
-                }
-                
-                ctx.strokeStyle = indicator.color;
-                ctx.lineWidth = 2;
-                
-                if (indicator.type === 'bb') {
-                    // Draw Bollinger Bands
-                    drawBollingerBands(padding, chartWidth, chartHeight, minPrice, maxPrice, indicatorData);
-                } else if (indicator.type === 'macd') {
-                    // Draw MACD in separate panel (simplified)
-                    drawMACD(padding, chartWidth, chartHeight, indicatorData);
-                } else if (indicator.type === 'rsi') {
-                    // Draw RSI in separate panel (simplified)
-                    drawRSI(padding, chartWidth, chartHeight, indicatorData);
-                } else if (indicator.type === 'cci') {
-                    // Draw CCI in separate panel (simplified)
-                    drawCCI(padding, chartWidth, chartHeight, indicatorData);
-                } else {
-                    // Draw simple line indicators (SMA, EMA, ALMA)
-                    drawLineIndicator(padding, chartWidth, chartHeight, minPrice, maxPrice, indicatorData);
-                }
-            });
-        }
-
-        function drawLineIndicator(padding, chartWidth, chartHeight, minPrice, maxPrice, data) {
-            if (data.length < 2) return;
-            
-            ctx.beginPath();
-            for (let i = 0; i < data.length; i++) {
-                const x = padding.left + (i * chartWidth / (candles.length - 1)) + (chartWidth / candles.length / 2);
-                const y = padding.top + chartHeight - ((data[i].value - minPrice) / (maxPrice - minPrice)) * chartHeight;
-                
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            }
-            ctx.stroke();
-        }
-
-        function drawBollingerBands(padding, chartWidth, chartHeight, minPrice, maxPrice, bands) {
-            if (bands.length < 2) return;
-            
-            // Draw upper band
-            ctx.beginPath();
-            ctx.setLineDash([5, 3]);
-            ctx.strokeStyle = INDICATOR_COLORS.bb;
-            ctx.lineWidth = 1;
-            
-            for (let i = 0; i < bands.length; i++) {
-                const x = padding.left + (i * chartWidth / (candles.length - 1)) + (chartWidth / candles.length / 2);
-                const y = padding.top + chartHeight - ((bands[i].upper - minPrice) / (maxPrice - minPrice)) * chartHeight;
-                
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            }
-            ctx.stroke();
-            
-            // Draw middle band
-            ctx.beginPath();
-            ctx.setLineDash([]);
-            ctx.strokeStyle = INDICATOR_COLORS.bb;
-            ctx.lineWidth = 2;
-            
-            for (let i = 0; i < bands.length; i++) {
-                const x = padding.left + (i * chartWidth / (candles.length - 1)) + (chartWidth / candles.length / 2);
-                const y = padding.top + chartHeight - ((bands[i].middle - minPrice) / (maxPrice - minPrice)) * chartHeight;
-                
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            }
-            ctx.stroke();
-            
-            // Draw lower band
-            ctx.beginPath();
-            ctx.setLineDash([5, 3]);
-            ctx.strokeStyle = INDICATOR_COLORS.bb;
-            ctx.lineWidth = 1;
-            
-            for (let i = 0; i < bands.length; i++) {
-                const x = padding.left + (i * chartWidth / (candles.length - 1)) + (chartWidth / candles.length / 2);
-                const y = padding.top + chartHeight - ((bands[i].lower - minPrice) / (maxPrice - minPrice)) * chartHeight;
-                
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            }
-            ctx.stroke();
-            
-            ctx.setLineDash([]);
-        }
-
-        function drawMACD(padding, chartWidth, chartHeight, macdData) {
-            // Simplified MACD drawing - in a real implementation, this would be in a separate panel
-            const macdHeight = 100;
-            const macdY = padding.top + chartHeight + 30;
-            
-            // Draw MACD line
-            if (macdData.macdLine && macdData.macdLine.length > 1) {
-                ctx.beginPath();
-                ctx.strokeStyle = '#3b82f6';
-                ctx.lineWidth = 2;
-                
-                for (let i = 0; i < macdData.macdLine.length; i++) {
-                    const x = padding.left + (i * chartWidth / (candles.length - 1)) + (chartWidth / candles.length / 2);
-                    const y = macdY + (macdHeight / 2) - (macdData.macdLine[i].value * 10);
-                    
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-                ctx.stroke();
-            }
-            
-            // Draw signal line
-            if (macdData.signalLine && macdData.signalLine.length > 1) {
-                ctx.beginPath();
-                ctx.strokeStyle = '#ec4899';
-                ctx.lineWidth = 2;
-                
-                for (let i = 0; i < macdData.signalLine.length; i++) {
-                    const x = padding.left + (i * chartWidth / (candles.length - 1)) + (chartWidth / candles.length / 2);
-                    const y = macdY + (macdHeight / 2) - (macdData.signalLine[i].value * 10);
-                    
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-                ctx.stroke();
-            }
-        }
-
-        function drawRSI(padding, chartWidth, chartHeight, rsiData) {
-            // Simplified RSI drawing
-            const rsiHeight = 80;
-            const rsiY = padding.top + chartHeight + 140;
-            
-            if (rsiData.length > 1) {
-                ctx.beginPath();
-                ctx.strokeStyle = INDICATOR_COLORS.rsi;
-                ctx.lineWidth = 2;
-                
-                for (let i = 0; i < rsiData.length; i++) {
-                    const x = padding.left + (i * chartWidth / (candles.length - 1)) + (chartWidth / candles.length / 2);
-                    const y = rsiY + rsiHeight - (rsiData[i].value * rsiHeight / 100);
-                    
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-                ctx.stroke();
-                
-                // Draw overbought/oversold lines
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([5, 5]);
-                
-                // Overbought line (70)
-                ctx.beginPath();
-                ctx.moveTo(padding.left, rsiY + rsiHeight - 70);
-                ctx.lineTo(padding.left + chartWidth, rsiY + rsiHeight - 70);
-                ctx.stroke();
-                
-                // Oversold line (30)
-                ctx.beginPath();
-                ctx.moveTo(padding.left, rsiY + rsiHeight - 30);
-                ctx.lineTo(padding.left + chartWidth, rsiY + rsiHeight - 30);
-                ctx.stroke();
-                
-                ctx.setLineDash([]);
-            }
-        }
-
-        function drawCCI(padding, chartWidth, chartHeight, cciData) {
-            // Simplified CCI drawing
-            const cciHeight = 80;
-            const cciY = padding.top + chartHeight + 230;
-            
-            if (cciData.length > 1) {
-                ctx.beginPath();
-                ctx.strokeStyle = INDICATOR_COLORS.cci;
-                ctx.lineWidth = 2;
-                
-                for (let i = 0; i < cciData.length; i++) {
-                    const x = padding.left + (i * chartWidth / (candles.length - 1)) + (chartWidth / candles.length / 2);
-                    const y = cciY + (cciHeight / 2) - (cciData[i].value * 2);
-                    
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-                ctx.stroke();
-            }
-        }
-
-        function drawCurrentPriceLine(padding, chartWidth, chartHeight, minPrice, maxPrice) {
-            const y = padding.top + chartHeight - ((currentPrice - minPrice) / (maxPrice - minPrice)) * chartHeight;
-            
-            ctx.strokeStyle = currentPrice > previousPrice ? '#10b981' : '#ef4444';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([5, 5]);
-            
-            ctx.beginPath();
-            ctx.moveTo(padding.left, y);
-            ctx.lineTo(padding.left + chartWidth, y);
-            ctx.stroke();
-            
-            ctx.setLineDash([]);
-            
-            // Draw price label
-            ctx.fillStyle = currentPrice > previousPrice ? '#10b981' : '#ef4444';
-            ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(currentPrice.toFixed(2), padding.left + chartWidth + 5, y);
-        }
-
-        function drawChartTitle() {
-            ctx.fillStyle = document.body.classList.contains('light-mode') ? '#333333' : '#ffffff';
-            ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-            ctx.fillText(`${activeSymbol} - ${DERIV_MARKETS[activeSymbol]?.name || 'Unknown'}`, 20, 15);
-        }
-
-        function drawNoData() {
-            const canvas = document.getElementById('mainChart');
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            
-            ctx.fillStyle = document.body.classList.contains('light-mode') ? '#999999' : '#777777';
-            ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('Waiting for market data...', centerX, centerY);
-        }
-
-        // ======================
-        // WEBSOCKET CONNECTION
-        // ======================
+        // WebSocket connection
         function connectToDeriv() {
             try {
                 socket = new WebSocket(DERIV_WS_URL);
                 
-                socket.onopen = function() {
-                    console.log('✅ Connected to Deriv WebSocket');
-                    isConnected = true;
-                    updateConnectionStatus('Connected', '#10b981');
-                    
+                socket.onopen = () => {
+                    console.log('Connected to Deriv WebSocket');
+                    updateConnectionStatus('Connected');
                     subscribeToSymbol(activeSymbol);
-                    updateMarketGrid();
+                    document.getElementById('chartLoading').style.display = 'none';
                 };
                 
-                socket.onmessage = function(event) {
+                socket.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
                         handleDerivMessage(data);
                     } catch (error) {
-                        console.error('Error parsing WebSocket message:', error);
+                        console.error('Error parsing message:', error);
                     }
                 };
                 
-                socket.onerror = function(error) {
-                    console.error('WebSocket Error:', error);
-                    updateConnectionStatus('Error', '#ef4444');
-                    isConnected = false;
+                socket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    updateConnectionStatus('Error');
                 };
                 
-                socket.onclose = function() {
-                    console.log('WebSocket Disconnected');
-                    updateConnectionStatus('Disconnected', '#ef4444');
-                    isConnected = false;
-                    currentTickSubscription = null;
-                    
+                socket.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    updateConnectionStatus('Disconnected');
                     setTimeout(connectToDeriv, 5000);
                 };
             } catch (error) {
                 console.error('Failed to connect:', error);
-                updateConnectionStatus('Failed', '#ef4444');
-            }
-        }
-
-        function unsubscribeFromTicks() {
-            if (currentTickSubscription && socket && socket.readyState === WebSocket.OPEN) {
-                const unsubscribeMsg = { 
-                    forget: currentTickSubscription,
-                    subscribe: 0 
-                };
-                socket.send(JSON.stringify(unsubscribeMsg));
-                console.log(`Unsubscribed from ticks for ${currentTickSubscription}`);
-                currentTickSubscription = null;
+                updateConnectionStatus('Failed');
             }
         }
 
         function subscribeToSymbol(symbol) {
             if (!socket || socket.readyState !== WebSocket.OPEN) return;
             
-            if (currentTickSubscription && currentTickSubscription !== symbol) {
-                unsubscribeFromTicks();
-            }
-            
-            const subscribeMsg = {
+            const msg = {
                 ticks: symbol,
                 subscribe: 1
             };
             
-            socket.send(JSON.stringify(subscribeMsg));
-            console.log(`📡 Subscribed to ${symbol}`);
-            currentTickSubscription = symbol;
+            socket.send(JSON.stringify(msg));
             
             // Request historical candles
             setTimeout(() => {
@@ -1858,7 +1094,7 @@
         function requestHistoricalCandles() {
             if (!socket || socket.readyState !== WebSocket.OPEN) return;
             
-            const request = {
+            const msg = {
                 ticks_history: activeSymbol,
                 end: 'latest',
                 count: MAX_CANDLES,
@@ -1867,8 +1103,7 @@
                 subscribe: 0
             };
             
-            socket.send(JSON.stringify(request));
-            console.log(`Requested ${MAX_CANDLES} historical candles for ${activeSymbol}`);
+            socket.send(JSON.stringify(msg));
         }
 
         function handleDerivMessage(data) {
@@ -1878,8 +1113,6 @@
                 handleCandleData(data.candles);
             } else if (data.msg_type === 'ohlc') {
                 handleOHLCData(data.ohlc);
-            } else if (data.error) {
-                console.warn('Deriv API Warning:', data.error?.message || 'API Error');
             }
         }
 
@@ -1889,349 +1122,134 @@
             previousPrice = currentPrice;
             currentPrice = parseFloat(tick.quote);
             
-            // Create or update current candle
-            const tickTime = tick.epoch * 1000;
-            const candleStart = Math.floor(tickTime / (activeTimeframe * 1000)) * (activeTimeframe * 1000);
-            
-            if (!currentCandle || currentCandle.time !== candleStart) {
-                // Complete previous candle if exists
-                if (currentCandle) {
-                    currentCandle.isComplete = true;
-                    candles.push({...currentCandle});
-                    
-                    if (candles.length > MAX_CANDLES) {
-                        candles.shift();
-                    }
-                }
-                
-                // Create new candle
-                currentCandle = {
-                    time: candleStart,
-                    open: currentPrice,
-                    high: currentPrice,
-                    low: currentPrice,
-                    close: currentPrice,
-                    volume: 1,
-                    isComplete: false
-                };
+            // Update tick indicator
+            const indicator = document.getElementById('tickIndicator');
+            if (currentPrice > previousPrice) {
+                indicator.textContent = '↑';
+                indicator.className = 'tick-indicator up';
+            } else if (currentPrice < previousPrice) {
+                indicator.textContent = '↓';
+                indicator.className = 'tick-indicator down';
             } else {
-                // Update current candle
-                currentCandle.high = Math.max(currentCandle.high, currentPrice);
-                currentCandle.low = Math.min(currentCandle.low, currentPrice);
-                currentCandle.close = currentPrice;
-                currentCandle.volume += 1;
+                indicator.textContent = '-';
+                indicator.className = 'tick-indicator';
+            }
+            
+            // Update price display
+            document.getElementById('lastPrice').textContent = currentPrice.toFixed(2);
+            document.getElementById('currentPrice').textContent = currentPrice.toFixed(2);
+            
+            const priceElement = document.getElementById('currentPrice');
+            if (currentPrice > previousPrice) {
+                priceElement.className = 'price-value up';
+            } else if (currentPrice < previousPrice) {
+                priceElement.className = 'price-value down';
+            }
+            
+            // Update change percentage
+            if (previousPrice > 0) {
+                const change = ((currentPrice - previousPrice) / previousPrice) * 100;
+                document.getElementById('priceChange').textContent = 
+                    `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
             }
             
             // Update tick count
-            tickCount++;
+            document.getElementById('tickCount').textContent = 
+                parseInt(document.getElementById('tickCount').textContent) + 1;
             
-            updatePriceDisplay();
-            updateLastUpdate();
-            updateMarketStats();
-            
-            document.getElementById('ticksReceived').textContent = tickCount;
-            document.getElementById('candleCount').textContent = candles.length + (currentCandle ? 1 : 0);
-            document.getElementById('tickSpeed').textContent = DERIV_MARKETS[activeSymbol]?.type === '1s' ? '1s' : 'Standard';
-            
-            // Update market grid for active symbol
-            updateMarketPrice(activeSymbol, currentPrice);
-            
-            // Redraw chart
+            // Update chart
             drawChart();
         }
 
         function handleCandleData(candleData) {
             if (!candleData || candleData.length === 0) return;
             
-            console.log(`Received ${candleData.length} historical candles`);
-            
-            // Convert Deriv candles to our format
             candles = candleData.map(candle => ({
                 time: candle.epoch * 1000,
                 open: parseFloat(candle.open),
                 high: parseFloat(candle.high),
                 low: parseFloat(candle.low),
                 close: parseFloat(candle.close),
-                volume: parseFloat(candle.volume) || Math.random() * 1000,
-                isComplete: true
+                volume: parseFloat(candle.volume) || 0
             }));
             
-            // Sort by time (ascending)
-            candles.sort((a, b) => a.time - b.time);
-            
-            // Hide loading spinner
-            document.getElementById('chartLoading').style.display = 'none';
-            
-            // Update UI
-            document.getElementById('candleCount').textContent = candles.length;
-            
-            // Draw chart
             drawChart();
         }
 
         function handleOHLCData(ohlc) {
             if (!ohlc) return;
             
-            // OHLC data for completed candles
-            const ohlcCandle = {
-                time: ohlc.open_time * 1000,
+            // Update current candle
+            const candleTime = ohlc.open_time * 1000;
+            const existingIndex = candles.findIndex(c => c.time === candleTime);
+            
+            const candle = {
+                time: candleTime,
                 open: parseFloat(ohlc.open),
                 high: parseFloat(ohlc.high),
                 low: parseFloat(ohlc.low),
                 close: parseFloat(ohlc.close),
-                volume: parseFloat(ohlc.volume) || 0,
-                isComplete: true
+                volume: parseFloat(ohlc.volume) || 0
             };
             
-            // Find and update existing candle
-            const existingIndex = candles.findIndex(c => c.time === ohlcCandle.time);
-            if (existingIndex !== -1) {
-                candles[existingIndex] = ohlcCandle;
+            if (existingIndex >= 0) {
+                candles[existingIndex] = candle;
             } else {
-                candles.push(ohlcCandle);
+                candles.push(candle);
                 if (candles.length > MAX_CANDLES) {
                     candles.shift();
                 }
             }
             
-            // Update chart
             drawChart();
         }
 
-        // ======================
-        // UI UPDATES
-        // ======================
-        function updateMarketGrid() {
-            const container = document.getElementById('marketGrid');
-            const dropdown = document.getElementById('marketDropdown');
-            
-            let gridHTML = '';
-            let dropdownHTML = '';
-            
-            Object.entries(DERIV_MARKETS).forEach(([symbol, data]) => {
-                const isActive = symbol === activeSymbol;
-                const price = symbol === activeSymbol ? currentPrice : data.basePrice;
-                
-                gridHTML += `
-                    <div class="market-btn ${isActive ? 'active' : ''}" data-symbol="${symbol}">
-                        <div class="market-name">${data.name}</div>
-                        <div class="market-price">${price.toFixed(2)}</div>
-                    </div>
-                `;
-                
-                dropdownHTML += `
-                    <div class="dropdown-item" data-symbol="${symbol}">
-                        ${data.name}
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = gridHTML;
-            dropdown.innerHTML = dropdownHTML;
-            
-            // Add event listeners
-            document.querySelectorAll('.market-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const symbol = btn.dataset.symbol;
-                    changeSymbol(symbol);
-                });
-            });
-            
-            document.querySelectorAll('.dropdown-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const symbol = item.dataset.symbol;
-                    changeSymbol(symbol);
-                });
-            });
+        function updateConnectionStatus(status) {
+            document.getElementById('connectionStatus').textContent = status;
         }
 
-        function updateMarketPrice(symbol, price) {
-            const marketBtn = document.querySelector(`.market-btn[data-symbol="${symbol}"]`);
-            if (marketBtn) {
-                const priceElement = marketBtn.querySelector('.market-price');
-                if (priceElement) {
-                    priceElement.textContent = price.toFixed(2);
-                }
-            }
-        }
-
-        function updatePriceDisplay() {
-            const priceElement = document.getElementById('currentPrice');
-            const changeElement = document.getElementById('priceChange');
-            const marketCurrent = document.getElementById('marketCurrent');
-            
-            if (currentPrice > 0) {
-                const priceText = currentPrice.toFixed(2);
-                priceElement.textContent = priceText;
-                marketCurrent.textContent = priceText;
-                
-                if (previousPrice > 0) {
-                    const change = currentPrice - previousPrice;
-                    const changePercent = (change / previousPrice) * 100;
-                    
-                    const isPositive = change >= 0;
-                    const changeText = `${isPositive ? '+' : ''}${change.toFixed(2)} (${isPositive ? '+' : ''}${changePercent.toFixed(2)}%)`;
-                    
-                    changeElement.textContent = changeText;
-                    changeElement.className = isPositive ? 'price-change price-up' : 'price-change price-down';
-                    priceElement.className = isPositive ? 'price-display price-up' : 'price-display price-down';
-                    
-                    // Update market change
-                    document.getElementById('marketChange').textContent = `${isPositive ? '+' : ''}${changePercent.toFixed(2)}%`;
-                    document.getElementById('marketChange').className = `stat-value ${isPositive ? 'positive' : 'negative'}`;
-                } else {
-                    priceElement.className = 'price-display price-neutral';
-                    changeElement.textContent = '+0.00 (0.00%)';
-                }
-            }
-        }
-
-        function updateMarketStats() {
-            if (candles.length === 0) return;
-            
-            // Calculate 24h high/low (using last 24 hours of data)
-            const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
-            const recentCandles = candles.filter(c => c.time >= twentyFourHoursAgo);
-            
-            if (recentCandles.length > 0) {
-                let high = recentCandles[0].high;
-                let low = recentCandles[0].low;
-                
-                recentCandles.forEach(candle => {
-                    high = Math.max(high, candle.high);
-                    low = Math.min(low, candle.low);
-                });
-                
-                // Add current candle if exists
-                if (currentCandle) {
-                    high = Math.max(high, currentCandle.high);
-                    low = Math.min(low, currentCandle.low);
-                }
-                
-                document.getElementById('marketHigh').textContent = high.toFixed(2);
-                document.getElementById('marketLow').textContent = low.toFixed(2);
-            }
-        }
-
-        function updateConnectionStatus(status, color) {
-            const statusElement = document.getElementById('connectionStatus');
-            const statusDot = document.getElementById('wsStatus');
-            const statusText = document.getElementById('connectionStatusText');
-            
-            statusElement.textContent = status;
-            statusText.textContent = status;
-            statusText.style.color = color;
-            statusDot.style.color = color;
-            statusDot.className = status === 'Connected' ? 'status-dot connected' : 'status-dot disconnected';
-        }
-
-        function updateLastUpdate() {
-            const now = new Date();
-            document.getElementById('lastUpdate').textContent = 
-                now.getHours().toString().padStart(2, '0') + ':' + 
-                now.getMinutes().toString().padStart(2, '0') + ':' + 
-                now.getSeconds().toString().padStart(2, '0');
-        }
-
-        // ======================
-        // EVENT HANDLERS
-        // ======================
-        function changeSymbol(symbol) {
-            // Unsubscribe from current tick
-            if (isConnected && currentTickSubscription) {
-                unsubscribeFromTicks();
-            }
-
-            activeSymbol = symbol;
-            
-            // Update UI
-            document.getElementById('currentSymbol').textContent = symbol;
-            document.getElementById('chartSymbol').textContent = symbol;
-            document.getElementById('chartLoading').style.display = 'block';
-            
-            // Update market grid selection
-            document.querySelectorAll('.market-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            const activeBtn = document.querySelector(`.market-btn[data-symbol="${symbol}"]`);
-            if (activeBtn) {
-                activeBtn.classList.add('active');
-            }
-            
-            // Reset data
-            candles = [];
-            currentCandle = null;
-            currentPrice = 0;
-            previousPrice = 0;
-            
-            // Update displays
-            updatePriceDisplay();
-            drawChart();
-            
-            // Subscribe to new symbol
-            if (isConnected) {
-                subscribeToSymbol(symbol);
-            }
-        }
-
-        function setTimeframe(seconds) {
-            activeTimeframe = seconds;
-            
-            // Update button states
-            document.querySelectorAll('.timeframe-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            // Reset candles and request new data
-            candles = [];
-            currentCandle = null;
-            document.getElementById('chartLoading').style.display = 'block';
-            
-            if (isConnected) {
-                requestHistoricalCandles();
-            }
-        }
-
-        // ======================
-        // INITIALIZATION
-        // ======================
+        // Initialize
         function init() {
             initTheme();
             initChart();
             connectToDeriv();
             
-            // Event listeners for timeframe buttons
-            document.querySelectorAll('.timeframe-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    setTimeframe(parseInt(e.target.dataset.timeframe));
-                });
+            // Event listeners
+            document.getElementById('candleBtn').addEventListener('click', () => {
+                chartType = 'candlestick';
+                document.getElementById('candleBtn').classList.add('active');
+                document.getElementById('lineBtn').classList.remove('active');
+                drawChart();
             });
             
-            // Event listeners for indicator buttons
-            document.querySelectorAll('.indicator-btn').forEach(btn => {
+            document.getElementById('lineBtn').addEventListener('click', () => {
+                chartType = 'line';
+                document.getElementById('lineBtn').classList.add('active');
+                document.getElementById('candleBtn').classList.remove('active');
+                drawChart();
+            });
+            
+            document.querySelectorAll('.timeframe-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const indicator = e.target.dataset.indicator;
-                    addIndicator(indicator);
+                    document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    activeTimeframe = parseInt(e.target.dataset.timeframe);
+                    requestHistoricalCandles();
                 });
             });
             
             // Handle window resize
-            window.addEventListener('resize', function() {
-                initChart();
-            });
-            
-            // Update latency periodically
-            setInterval(() => {
-                if (tickCount > 0) {
-                    document.getElementById('latency').textContent = `${Math.floor(Math.random() * 50)}ms`;
+            window.addEventListener('resize', () => {
+                if (canvas) {
+                    canvas.width = canvas.offsetWidth;
+                    canvas.height = canvas.offsetHeight;
+                    drawChart();
                 }
-            }, 5000);
+            });
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(init, 500);
-        });
+        // Start everything
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
