@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>⚡ Deriv Digits Analysis Terminal + Suggestions & History</title>
+  <title>⚡ Deriv Digits Analysis Terminal + Suggestions & History + Signal Scanner</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -75,13 +75,10 @@
 
     // ---------- helper: extract last digit from decimal part ----------
     function getLastDigitFromPrice(priceStr) {
-      // priceStr examples: "786.70", "123.456", "1000"
       const dotIndex = priceStr.indexOf('.');
       if (dotIndex === -1) {
-        // No decimal part, use last character of whole string
         return parseInt(priceStr.slice(-1), 10);
       } else {
-        // Decimal part exists, take last character after dot
         const decimalPart = priceStr.slice(dotIndex + 1);
         return parseInt(decimalPart.slice(-1), 10);
       }
@@ -214,7 +211,7 @@
       );
     }
 
-    // ---------- trading suggestions card ----------
+    // ---------- trading suggestions card (deviation from 10%) ----------
     function SuggestionCard({ frequency }) {
       if (!frequency || frequency.length === 0) return null;
       const deviations = frequency.map(f => ({ digit: f.digit, dev: f.percentage - 10 }));
@@ -275,6 +272,61 @@
             <span>earliest</span><span>latest</span>
           </div>
         </div>
+      );
+    }
+
+    // ---------- NEW: Signal Scanner Component ----------
+    function SignalScanner({ frequency, lastDigit }) {
+      const [signal, setSignal] = useState(null);
+      const prevTriggerRef = useRef(null);
+
+      // Compute prediction based on frequency
+      const prediction = useMemo(() => {
+        if (!frequency || frequency.length === 0) return null;
+        // Find digit with highest percentage
+        const max = frequency.reduce((a, b) => a.percentage > b.percentage ? a : b);
+        const highestPct = max.percentage;
+        // Subtract 0.5% twice
+        const targetPct = highestPct - 0.5 - 0.5;
+        // Find digit whose percentage is closest to targetPct
+        const closest = frequency.reduce((prev, curr) => {
+          return Math.abs(curr.percentage - targetPct) < Math.abs(prev.percentage - targetPct) ? curr : prev;
+        });
+        return { triggerDigit: max.digit, targetDigit: closest.digit, targetPct };
+      }, [frequency]);
+
+      // When last digit changes, check for trigger
+      useEffect(() => {
+        if (prediction && lastDigit === prediction.triggerDigit) {
+          // Avoid repeated signals for same trigger occurrence? We'll allow each new tick to trigger.
+          setSignal({ ...prediction, timestamp: Date.now() });
+        }
+      }, [lastDigit, prediction]);
+
+      return (
+        <AnalysisCard title="🔔 Signal Scanner" subtitle="Predicts when most frequent digit appears">
+          {prediction ? (
+            <div>
+              <p className="text-sm">
+                <span className="text-muted-foreground">Trigger digit:</span>{' '}
+                <span className="font-bold text-highlight text-lg">{prediction.triggerDigit}</span>{' '}
+                <span className="text-muted-foreground">(highest {frequency.find(f => f.digit === prediction.triggerDigit)?.percentage.toFixed(1)}%)</span>
+              </p>
+              <p className="text-sm mt-1">
+                <span className="text-muted-foreground">Target digit:</span>{' '}
+                <span className="font-bold text-profit text-lg">{prediction.targetDigit}</span>{' '}
+                <span className="text-muted-foreground">(closest to {prediction.targetPct.toFixed(1)}%)</span>
+              </p>
+              {signal && (
+                <div className="mt-3 p-3 bg-profit/20 border border-profit rounded-md animate-pulse">
+                  <span className="font-mono text-sm">⚡ SIGNAL — Digit {prediction.triggerDigit} appeared! Consider betting on {prediction.targetDigit}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">Waiting for enough data...</p>
+          )}
+        </AnalysisCard>
       );
     }
 
@@ -352,13 +404,14 @@
       };
 
       const selectedLabel = VOLATILITY_SYMBOLS.find(s => s.value === symbol)?.label || symbol;
+      const currentDigit = digits.length > 0 ? digits[digits.length - 1] : null;
 
       return (
         <div className="min-h-screen bg-background">
           <header className="border-b border-border px-6 py-4">
             <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h1 className="text-xl font-bold text-foreground tracking-tight"><span className="text-primary">●</span> Digit Analysis Terminal + Suggestion & History</h1>
+                <h1 className="text-xl font-bold text-foreground tracking-tight"><span className="text-primary">●</span> Digit Analysis Terminal + Suggestions & History + Signal Scanner</h1>
                 <p className="text-xs text-muted-foreground mt-0.5">Deriv Synthetic Indices — Live Digit Analysis</p>
               </div>
               <div className="flex items-center gap-3 text-xs font-mono">
@@ -402,32 +455,16 @@
 
                 <SuggestionCard frequency={frequency} />
 
+                {/* NEW: Signal Scanner */}
+                <SignalScanner frequency={frequency} lastDigit={currentDigit} />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <AnalysisCard 
-                    title="Over / Under" 
-                    subtitle={`Probability per digit barrier — Current price: ${lastPrice ? lastPrice : '--'}`}
-                  >
-                    <OverUnderTable data={overUnder} />
-                  </AnalysisCard>
-
-                  <AnalysisCard 
-                    title="Matches / Differs" 
-                    subtitle={`Match & differ probability per digit — Current price: ${lastPrice ? lastPrice : '--'}`}
-                  >
-                    <MatchDifferTable data={matchDiffer} />
-                  </AnalysisCard>
-
-                  <AnalysisCard 
-                    title="Even / Odd" 
-                    subtitle={`Even vs odd distribution — Current price: ${lastPrice ? lastPrice : '--'}`}
-                  >
-                    <EvenOddDisplay data={evenOdd} />
-                  </AnalysisCard>
+                  <AnalysisCard title="Over / Under" subtitle="Probability per digit barrier"><OverUnderTable data={overUnder} /></AnalysisCard>
+                  <AnalysisCard title="Matches / Differs" subtitle="Match & differ probability per digit"><MatchDifferTable data={matchDiffer} /></AnalysisCard>
+                  <AnalysisCard title="Even / Odd" subtitle="Even vs odd distribution"><EvenOddDisplay data={evenOdd} /></AnalysisCard>
                 </div>
 
-                <AnalysisCard title="Streak Tracking" subtitle="Longest & current consecutive streaks">
-                  <StreakDisplay data={streaks} />
-                </AnalysisCard>
+                <AnalysisCard title="Streak Tracking" subtitle="Longest & current consecutive streaks"><StreakDisplay data={streaks} /></AnalysisCard>
 
                 <AnalysisCard title="Frequency History (last 30 snapshots)" subtitle="Every 10 ticks — lines for most deviating digits">
                   <HistoryChart history={freqHistory} />
