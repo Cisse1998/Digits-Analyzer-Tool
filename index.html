@@ -73,6 +73,20 @@
       { value: "1HZ100V", label: "Volatility 100 (1s) Index" },
     ];
 
+    // ---------- helper: extract last digit from decimal part ----------
+    function getLastDigitFromPrice(priceStr) {
+      // priceStr examples: "786.70", "123.456", "1000"
+      const dotIndex = priceStr.indexOf('.');
+      if (dotIndex === -1) {
+        // No decimal part, use last character of whole string
+        return parseInt(priceStr.slice(-1), 10);
+      } else {
+        // Decimal part exists, take last character after dot
+        const decimalPart = priceStr.slice(dotIndex + 1);
+        return parseInt(decimalPart.slice(-1), 10);
+      }
+    }
+
     // ---------- websocket ----------
     function connectDeriv() {
       let ws = null;
@@ -88,7 +102,7 @@
             if (data.tick) {
               subscriptionId = data.tick.id;
               const price = String(data.tick.quote);
-              const lastDigit = parseInt(price[price.length - 1], 10);
+              const lastDigit = getLastDigitFromPrice(price);
               onTick(lastDigit, price);
             }
           } catch (e) { }
@@ -200,14 +214,13 @@
       );
     }
 
-    // ---------- new component: trading suggestions based on deviation from 10% ----------
+    // ---------- trading suggestions card ----------
     function SuggestionCard({ frequency }) {
       if (!frequency || frequency.length === 0) return null;
-      // compute deviation from expected 10%
       const deviations = frequency.map(f => ({ digit: f.digit, dev: f.percentage - 10 }));
       const sorted = [...deviations].sort((a, b) => Math.abs(b.dev) - Math.abs(a.dev));
-      const topOver = sorted.filter(d => d.dev > 0).slice(0, 3);  // most overrepresented
-      const topUnder = sorted.filter(d => d.dev < 0).slice(0, 3); // most underrepresented
+      const topOver = sorted.filter(d => d.dev > 0).slice(0, 3);
+      const topUnder = sorted.filter(d => d.dev < 0).slice(0, 3);
 
       return (
         <AnalysisCard title="📈 Trading Suggestions" subtitle="Digits deviating most from 10% (potential mean reversion)">
@@ -227,23 +240,19 @@
       );
     }
 
-    // ---------- new component: frequency history sparkline (SVG) ----------
+    // ---------- history chart ----------
     function HistoryChart({ history }) {
       if (!history || history.length < 2) return (
         <div className="text-muted-foreground text-sm py-4 text-center">Collecting history (snapshots every 10 ticks)...</div>
       );
 
-      // we'll pick 3 most volatile digits based on latest deviation? for simplicity pick digits 0,5,9 as examples
-      // but better: pick the digits with highest current deviation
-      // Let's compute latest frequencies
       const latest = history[history.length-1];
       const devs = latest.map((pct, idx) => ({ digit: idx, dev: Math.abs(pct-10) })).sort((a,b) => b.dev - a.dev);
-      const topDigits = devs.slice(0,4).map(d => d.digit); // top 4 deviating digits
+      const topDigits = devs.slice(0,4).map(d => d.digit);
 
-      const colors = ["#10b981", "#ef4444", "#f59e0b", "#8b5cf6"]; // profit, loss, highlight, accent
+      const colors = ["#10b981", "#ef4444", "#f59e0b", "#8b5cf6"];
       const width = 400, height = 120;
       const points = history.map((freqs, idx) => {
-        // x coordinate based on index
         const x = (idx / (history.length-1)) * width;
         return { x, freqs };
       });
@@ -253,7 +262,7 @@
           <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto max-h-32" preserveAspectRatio="none">
             {topDigits.map((digit, lineIdx) => {
               const color = colors[lineIdx % colors.length];
-              const linePoints = points.map(p => `${p.x},${height - (p.freqs[digit] / 15) * height}`).join(' '); // scale: max freq ~15% -> height
+              const linePoints = points.map(p => `${p.x},${height - (p.freqs[digit] / 15) * height}`).join(' ');
               return (
                 <g key={digit}>
                   <polyline points={linePoints} stroke={color} strokeWidth="2" fill="none" />
@@ -279,26 +288,21 @@
       const [lastPrice, setLastPrice] = useState(null);
       const connectionRef = useRef(null);
 
-      // new states for history
-      const [freqHistory, setFreqHistory] = useState([]); // array of percentage arrays (10 numbers each)
-      const lastSnapshotLength = useRef(0); // to avoid duplicate snapshots
+      const [freqHistory, setFreqHistory] = useState([]);
+      const lastSnapshotLength = useRef(0);
 
-      // update history on new digits (sample every 10 ticks)
       useEffect(() => {
         if (digits.length === 0) return;
-        // take snapshot every 10 ticks, but only if length increased enough
         if (digits.length % 10 === 0 && digits.length > lastSnapshotLength.current) {
           lastSnapshotLength.current = digits.length;
           const freqs = computeDigitFrequency(digits).map(f => f.percentage);
           setFreqHistory(prev => {
             const updated = [...prev, freqs];
-            // keep last 30 snapshots
             return updated.slice(-30);
           });
         }
       }, [digits]);
 
-      // reset history when stream starts/stops or symbol changes
       const resetHistory = useCallback(() => {
         setFreqHistory([]);
         lastSnapshotLength.current = 0;
@@ -333,7 +337,6 @@
         connectionRef.current?.disconnect();
         connectionRef.current = null;
         setIsLive(false);
-        // optionally keep history? we keep it for review
       }, []);
 
       useEffect(() => {
@@ -345,7 +348,6 @@
         setMaxTicks(count);
         setInputValue(String(count));
         setDigits(prev => (prev.length > count ? prev.slice(prev.length - count) : prev));
-        // history might be invalid after truncation; we reset for simplicity
         resetHistory();
       };
 
@@ -398,21 +400,29 @@
                   <div className="space-y-1.5">{frequency.map(f => <DigitBar key={f.digit} digit={f.digit} percentage={f.percentage} maxPercentage={maxFreqPct} />)}</div>
                 </AnalysisCard>
 
-                {/* NEW: Trading Suggestions */}
                 <SuggestionCard frequency={frequency} />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Over/Under card with current price added to subtitle */}
                   <AnalysisCard 
                     title="Over / Under" 
                     subtitle={`Probability per digit barrier — Current price: ${lastPrice ? lastPrice : '--'}`}
                   >
                     <OverUnderTable data={overUnder} />
                   </AnalysisCard>
-                  <AnalysisCard title="Matches / Differs" subtitle="Match & differ probability per digit">
+
+                  {/* Matches / Differs card with current price */}
+                  <AnalysisCard 
+                    title="Matches / Differs" 
+                    subtitle={`Match & differ probability per digit — Current price: ${lastPrice ? lastPrice : '--'}`}
+                  >
                     <MatchDifferTable data={matchDiffer} />
                   </AnalysisCard>
-                  <AnalysisCard title="Even / Odd" subtitle="Even vs odd distribution">
+
+                  {/* Even / Odd card with current price */}
+                  <AnalysisCard 
+                    title="Even / Odd" 
+                    subtitle={`Even vs odd distribution — Current price: ${lastPrice ? lastPrice : '--'}`}
+                  >
                     <EvenOddDisplay data={evenOdd} />
                   </AnalysisCard>
                 </div>
@@ -421,7 +431,6 @@
                   <StreakDisplay data={streaks} />
                 </AnalysisCard>
 
-                {/* NEW: Frequency History Chart */}
                 <AnalysisCard title="Frequency History (last 30 snapshots)" subtitle="Every 10 ticks — lines for most deviating digits">
                   <HistoryChart history={freqHistory} />
                 </AnalysisCard>
