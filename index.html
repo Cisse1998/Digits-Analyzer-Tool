@@ -84,7 +84,29 @@
       { value: "1HZ100V", label: "Volatility 100 (1s) Index" },
     ];
 
-    // ---------- helper: extract last digit from a formatted price string (with decimal) ----------
+    // Fallback decimal places based on your examples (if API fails)
+    const DECIMAL_FALLBACK = {
+      '1HZ10V': 2,
+      'R_10': 3,
+      '1HZ15V': 3,
+      '1HZ25V': 2,
+      'R_25': 3,
+      '1HZ30V': 3,
+      '1HZ50V': 2,
+      'R_50': 4,
+      '1HZ75V': 2,
+      'R_75': 4,
+      '1HZ90V': 3,
+      '1HZ100V': 2,
+      'R_100': 2,
+      'JD10': 2,  // approximate, adjust if needed
+      'JD25': 2,
+      'JD50': 2,
+      'JD75': 2,
+      'JD100': 2,
+    };
+
+    // ---------- helper: extract last digit from a formatted price string ----------
     function getLastDigitFromPrice(priceStr) {
       const dotIndex = priceStr.indexOf('.');
       if (dotIndex === -1) {
@@ -95,7 +117,28 @@
       }
     }
 
-    // ---------- websocket (now passes raw number, not string) ----------
+    // ---------- fetch symbol details to get decimal places ----------
+    async function fetchDecimalPlaces(symbol) {
+      try {
+        const response = await fetch(`https://api.deriv.com/api/v3/symbols?symbols=${symbol}&app_id=1089`);
+        const data = await response.json();
+        if (data.symbols && data.symbols[0]) {
+          const info = data.symbols[0];
+          if (info.decimal_places !== undefined) {
+            return info.decimal_places;
+          } else if (info.pip_size) {
+            // pip_size is the smallest price change, e.g., 0.001 -> 3 decimals
+            return Math.round(Math.log10(1 / info.pip_size));
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch symbol details", e);
+      }
+      // Fallback to hardcoded map or default 3
+      return DECIMAL_FALLBACK[symbol] || 3;
+    }
+
+    // ---------- websocket (passes raw price number) ----------
     function connectDeriv() {
       let ws = null;
       let subscriptionId = null;
@@ -141,27 +184,6 @@
       };
 
       return { subscribe, unsubscribe, disconnect };
-    }
-
-    // ---------- fetch symbol details to get decimal places ----------
-    async function fetchDecimalPlaces(symbol) {
-      try {
-        const response = await fetch(`https://api.deriv.com/api/v3/symbols?symbols=${symbol}&app_id=1089`);
-        const data = await response.json();
-        if (data.symbols && data.symbols[0]) {
-          const info = data.symbols[0];
-          // Try to get decimal places from common fields
-          if (info.decimal_places !== undefined) {
-            return info.decimal_places;
-          } else if (info.pip_size) {
-            // pip_size is the smallest price change, e.g., 0.001 -> 3 decimals
-            return Math.round(Math.log10(1 / info.pip_size));
-          }
-        }
-      } catch (e) {
-        console.error("Failed to fetch symbol details", e);
-      }
-      return 3; // fallback to 3 decimals
     }
 
     // ---------- analysis functions (unchanged) ----------
@@ -491,7 +513,7 @@
       const [symbol, setSymbol] = useState("R_100");
       const [isLive, setIsLive] = useState(false);
       const [lastPrice, setLastPrice] = useState(null); // formatted price string for display
-      const [decimalPlaces, setDecimalPlaces] = useState(3); // default 3, will be updated
+      const [decimalPlaces, setDecimalPlaces] = useState(3); // will be updated
       const connectionRef = useRef(null);
 
       const [freqHistory, setFreqHistory] = useState([]);
@@ -544,7 +566,7 @@
         setIsLive(true);
 
         conn.subscribe(symbol, (rawPrice) => {
-          // Format price with correct decimal places
+          // Format price with exact decimal places
           const formatted = rawPrice.toFixed(decimalPlaces);
           const digit = getLastDigitFromPrice(formatted);
           setLastPrice(formatted);
