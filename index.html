@@ -186,7 +186,7 @@
       return { currentEvenStreak: curEven, currentOddStreak: curOdd, longestEvenStreak: maxEven, longestOddStreak: maxOdd, digitStreaks: Array.from({ length: 10 }, (_, i) => ({ digit: i, current: curDigit[i], longest: maxDigit[i] })) };
     }
 
-    // NEW: Rise/Fall analysis
+    // Rise/Fall analysis
     function computeRiseFall(prices) {
       if (prices.length < 2) return { riseCount: 0, fallCount: 0, sameCount: 0, totalMovements: 0, risePercent: 0, fallPercent: 0 };
       let rise = 0, fall = 0, same = 0;
@@ -267,7 +267,7 @@
       );
     }
 
-    // NEW: Rise/Fall Card
+    // Rise/Fall Card
     function RiseFallCard({ data }) {
       return (
         <AnalysisCard title="📊 Rise / Fall Analysis" subtitle="Tick-to-tick price movement">
@@ -426,12 +426,48 @@
       );
     }
 
+    // NEW: Recent Movements Card (separate from Recent Digits)
+    function RecentMovements({ prices }) {
+      const getMovement = (index) => {
+        if (index === 0 || prices.length < 2) return '—';
+        const prev = parseFloat(prices[index-1]);
+        const curr = parseFloat(prices[index]);
+        if (curr > prev) return 'R';
+        if (curr < prev) return 'F';
+        return '=';
+      };
+
+      // Show last 50 movements (newest first)
+      const last50 = prices.slice(-50).reverse();
+      const last50Indices = prices.slice(-50).map((_, idx) => prices.length - 50 + idx).reverse();
+
+      return (
+        <AnalysisCard title="📈 Tick Movements (last 50)" subtitle="R=Rise, F=Fall, = =Same, — =First tick">
+          <div className="flex flex-wrap gap-1.5">
+            {last50.map((price, i) => {
+              const originalIndex = last50Indices[i];
+              const movement = getMovement(originalIndex);
+              return (
+                <div key={i} className={`w-8 h-8 flex items-center justify-center rounded text-xs font-mono font-bold ${
+                  movement === 'R' ? 'bg-profit/15 text-profit' : 
+                  movement === 'F' ? 'bg-loss/15 text-loss' : 
+                  'bg-secondary text-muted-foreground'
+                }`}>
+                  {movement}
+                </div>
+              );
+            })}
+          </div>
+        </AnalysisCard>
+      );
+    }
+
     // ---------- main App ----------
     function Index() {
       const [maxTicks, setMaxTicks] = useState(1000);
       const [inputValue, setInputValue] = useState("1000");
       const [digits, setDigits] = useState([]);
-      const [prices, setPrices] = useState([]); // NEW: store price history
+      const [prices, setPrices] = useState([]);
       const [symbol, setSymbol] = useState("R_100");
       const [isLive, setIsLive] = useState(false);
       const [lastPrice, setLastPrice] = useState(null);
@@ -462,13 +498,13 @@
       const matchDiffer = useMemo(() => computeMatchDiffer(digits), [digits]);
       const evenOdd = useMemo(() => computeEvenOdd(digits), [digits]);
       const streaks = useMemo(() => computeStreaks(digits), [digits]);
-      const riseFall = useMemo(() => computeRiseFall(prices), [prices]); // NEW
+      const riseFall = useMemo(() => computeRiseFall(prices), [prices]);
       const maxFreqPct = useMemo(() => Math.max(...frequency.map(f => f.percentage), 15), [frequency]);
 
       const startStream = useCallback(() => {
         if (connectionRef.current) connectionRef.current.disconnect();
         setDigits([]);
-        setPrices([]); // reset prices
+        setPrices([]);
         setLastPrice(null);
         resetHistory();
         const conn = connectDeriv();
@@ -509,16 +545,6 @@
 
       const selectedLabel = VOLATILITY_SYMBOLS.find(s => s.value === symbol)?.label || symbol;
       const currentDigit = digits.length > 0 ? digits[digits.length - 1] : null;
-
-      // Helper to get movement indicator for a tick at given index
-      const getMovement = (index) => {
-        if (index === 0 || prices.length < 2) return null;
-        const prev = parseFloat(prices[index-1]);
-        const curr = parseFloat(prices[index]);
-        if (curr > prev) return 'R';
-        if (curr < prev) return 'F';
-        return '-'; // same price
-      };
 
       return (
         <div className="min-h-screen bg-background">
@@ -571,7 +597,6 @@
 
                 <SignalScanner frequency={frequency} lastDigit={currentDigit} />
 
-                {/* NEW: Rise/Fall Card */}
                 <RiseFallCard data={riseFall} />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -605,28 +630,19 @@
                   <HistoryChart history={freqHistory} />
                 </AnalysisCard>
 
-                {/* MODIFIED: Recent Digits with R/F indicators */}
-                <AnalysisCard title="Recent Digits" subtitle="Last 50 ticks with rise/fall indicators (newest first)">
+                {/* Original Recent Digits card (unchanged) */}
+                <AnalysisCard title="Recent Digits" subtitle="Last 50 ticks (newest first)">
                   <div className="flex flex-wrap gap-1.5">
-                    {digits.slice(-50).reverse().map((d, i) => {
-                      // Calculate original index in the full array
-                      const originalIndex = digits.length - 1 - i;
-                      const movement = getMovement(originalIndex);
-                      return (
-                        <div key={i} className={`w-10 h-10 flex flex-col items-center justify-center rounded text-xs font-mono font-bold ${
-                          d % 2 === 0 ? "bg-profit/15" : "bg-loss/15"
-                        }`}>
-                          <span className="text-sm leading-tight">{d}</span>
-                          <span className={`text-[9px] leading-tight ${
-                            movement === 'R' ? 'text-profit' : movement === 'F' ? 'text-loss' : 'text-muted-foreground'
-                          }`}>
-                            {movement || ''}
-                          </span>
-                        </div>
-                      );
-                    })}
+                    {digits.slice(-50).reverse().map((d, i) => (
+                      <span key={i} className={`w-8 h-8 flex items-center justify-center rounded text-xs font-mono font-bold ${d % 2 === 0 ? "bg-profit/15 text-profit" : "bg-loss/15 text-loss"}`}>
+                        {d}
+                      </span>
+                    ))}
                   </div>
                 </AnalysisCard>
+
+                {/* NEW: Separate Recent Movements card */}
+                <RecentMovements prices={prices} />
               </>
             )}
           </main>
