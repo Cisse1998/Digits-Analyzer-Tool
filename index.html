@@ -58,9 +58,21 @@
   <script type="text/babel">
     const { useState, useMemo, useCallback, useEffect, useRef } = React;
 
-    // ---------- constants ----------
+    // ---------- constants (updated with correct Jump symbols) ----------
     const DERIV_WS_URL = "wss://ws.binaryws.com/websockets/v3?app_id=1089";
     const VOLATILITY_SYMBOLS = [
+      // Jump Indices (correct symbols)
+      { value: "JD10", label: "Jump 10 Index" },
+      { value: "JD25", label: "Jump 25 Index" },
+      { value: "JD50", label: "Jump 50 Index" },
+      { value: "JD75", label: "Jump 75 Index" },
+      { value: "JD100", label: "Jump 100 Index" },
+      // Volatility Indices
+      { value: "R_10", label: "Volatility 10 Index" },
+      { value: "R_25", label: "Volatility 25 Index" },
+      { value: "R_50", label: "Volatility 50 Index" },
+      { value: "R_75", label: "Volatility 75 Index" },
+      { value: "R_100", label: "Volatility 100 Index" },
       // Volatility Indices (1s)
       { value: "1HZ10V", label: "Volatility 10 (1s) Index" },
       { value: "1HZ15V", label: "Volatility 15 (1s) Index" },
@@ -70,18 +82,6 @@
       { value: "1HZ75V", label: "Volatility 75 (1s) Index" },
       { value: "1HZ90V", label: "Volatility 90 (1s) Index" },
       { value: "1HZ100V", label: "Volatility 100 (1s) Index" },
-      // Volatility Indices
-      { value: "R_10", label: "Volatility 10 Index" },
-      { value: "R_25", label: "Volatility 25 Index" },
-      { value: "R_50", label: "Volatility 50 Index" },
-      { value: "R_75", label: "Volatility 75 Index" },
-      { value: "R_100", label: "Volatility 100 Index" },
-      // Jump Indices
-      { value: "J_10", label: "Jump 10 Index" },
-      { value: "J_25", label: "Jump 25 Index" },
-      { value: "J_50", label: "Jump 50 Index" },
-      { value: "J_75", label: "Jump 75 Index" },
-      { value: "J_100", label: "Jump 100 Index" },
     ];
 
     // ---------- helper: extract last digit from decimal part ----------
@@ -95,15 +95,20 @@
       }
     }
 
-    // ---------- websocket ----------
+    // ---------- websocket (updated from derivWebSocket.ts) ----------
     function connectDeriv() {
       let ws = null;
       let subscriptionId = null;
 
       const subscribe = (symbol, onTick) => {
         if (ws) ws.close();
+
         ws = new WebSocket(DERIV_WS_URL);
-        ws.onopen = () => ws?.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
+
+        ws.onopen = () => {
+          ws?.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
+        };
+
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
@@ -115,14 +120,31 @@
             }
           } catch (e) { }
         };
-        ws.onerror = () => console.error("Deriv WS error");
+
+        ws.onerror = () => {
+          console.error("Deriv WebSocket error");
+        };
       };
-      const unsubscribe = () => { if (ws && subscriptionId) { ws.send(JSON.stringify({ forget: subscriptionId })); subscriptionId = null; } };
-      const disconnect = () => { unsubscribe(); if (ws) { ws.close(); ws = null; } };
+
+      const unsubscribe = () => {
+        if (ws && subscriptionId) {
+          ws.send(JSON.stringify({ forget: subscriptionId }));
+          subscriptionId = null;
+        }
+      };
+
+      const disconnect = () => {
+        unsubscribe();
+        if (ws) {
+          ws.close();
+          ws = null;
+        }
+      };
+
       return { subscribe, unsubscribe, disconnect };
     }
 
-    // ---------- analysis functions ----------
+    // ---------- analysis functions (unchanged) ----------
     function computeDigitFrequency(digits) {
       const total = digits.length;
       const counts = Array(10).fill(0);
@@ -164,7 +186,7 @@
       return { currentEvenStreak: curEven, currentOddStreak: curOdd, longestEvenStreak: maxEven, longestOddStreak: maxOdd, digitStreaks: Array.from({ length: 10 }, (_, i) => ({ digit: i, current: curDigit[i], longest: maxDigit[i] })) };
     }
 
-    // ---------- components ----------
+    // ---------- components (unchanged) ----------
     function AnalysisCard({ title, subtitle, children }) {
       return (
         <div className="bg-card border border-border rounded-lg p-5">
@@ -291,22 +313,17 @@
       const [scannerActive, setScannerActive] = useState(false);
       const [lastSignal, setLastSignal] = useState(null);
 
-      // Compute prediction based on frequency (uses last 1000 digits by default)
       const prediction = useMemo(() => {
         if (!frequency || frequency.length === 0) return null;
-        // Find digit with highest percentage
         const max = frequency.reduce((a, b) => a.percentage > b.percentage ? a : b);
         const highestPct = max.percentage;
-        // Subtract 0.5% twice
         const targetPct = highestPct - 0.5 - 0.5;
-        // Find digit whose percentage is closest to targetPct
         const closest = frequency.reduce((prev, curr) => {
           return Math.abs(curr.percentage - targetPct) < Math.abs(prev.percentage - targetPct) ? curr : prev;
         });
         return { triggerDigit: max.digit, targetDigit: closest.digit, targetPct };
       }, [frequency]);
 
-      // When last digit changes and scanner is active, check for trigger
       useEffect(() => {
         if (scannerActive && prediction && lastDigit === prediction.triggerDigit) {
           setLastSignal({ ...prediction, timestamp: Date.now() });
@@ -315,7 +332,7 @@
 
       const toggleScanner = () => {
         setScannerActive(prev => !prev);
-        setLastSignal(null); // clear old signal on toggle
+        setLastSignal(null);
       };
 
       return (
@@ -484,7 +501,6 @@
 
                 <SuggestionCard frequency={frequency} />
 
-                {/* Signal Scanner */}
                 <SignalScanner frequency={frequency} lastDigit={currentDigit} />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
