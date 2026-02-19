@@ -599,7 +599,6 @@
 
                 <RiseFallCard data={riseFall} />
 
-                {/* Recent Movements placed right after Rise/Fall card */}
                 <RecentMovements prices={prices} />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -625,14 +624,7 @@
                   </AnalysisCard>
                 </div>
 
-                <AnalysisCard title="Streak Tracking" subtitle="Longest & current consecutive streaks">
-                  <StreakDisplay data={streaks} />
-                </AnalysisCard>
-
-                <AnalysisCard title="Frequency History (last 30 snapshots)" subtitle="Every 10 ticks — lines for most deviating digits">
-                  <HistoryChart history={freqHistory} />
-                </AnalysisCard>
-
+                {/* Recent Digits placed right after the Even/Odd card */}
                 <AnalysisCard title="Recent Digits" subtitle="Last 50 ticks (newest first)">
                   <div className="flex flex-wrap gap-1.5">
                     {digits.slice(-50).reverse().map((d, i) => (
@@ -641,6 +633,14 @@
                       </span>
                     ))}
                   </div>
+                </AnalysisCard>
+
+                <AnalysisCard title="Streak Tracking" subtitle="Longest & current consecutive streaks">
+                  <StreakDisplay data={streaks} />
+                </AnalysisCard>
+
+                <AnalysisCard title="Frequency History (last 30 snapshots)" subtitle="Every 10 ticks — lines for most deviating digits">
+                  <HistoryChart history={freqHistory} />
                 </AnalysisCard>
               </>
             )}
