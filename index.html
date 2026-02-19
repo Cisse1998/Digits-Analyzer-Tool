@@ -597,10 +597,11 @@
 
                 <SignalScanner frequency={frequency} lastDigit={currentDigit} />
 
-                {/* Large price display */}
-                <div className="text-4xl md:text-5xl font-bold text-profit text-center py-4 border border-profit/30 rounded-lg bg-profit/5">
-                  {lastPrice ? lastPrice : '--'}
+                {/* Large last digit display */}
+                <div className="text-6xl md:text-7xl font-bold text-profit text-center py-4 border border-profit/30 rounded-lg bg-profit/5">
+                  {lastPrice ? getLastDigitFromPrice(lastPrice) : '--'}
                 </div>
+                <div className="text-xs text-muted-foreground text-center mt-1">Last Digit</div>
 
                 <RiseFallCard data={riseFall} />
 
