@@ -84,7 +84,7 @@
       { value: "1HZ100V", label: "Volatility 100 (1s) Index" },
     ];
 
-    // ---------- helper: extract last digit from decimal part ----------
+    // ---------- helper: extract last digit from a formatted price string (with decimal) ----------
     function getLastDigitFromPrice(priceStr) {
       const dotIndex = priceStr.indexOf('.');
       if (dotIndex === -1) {
@@ -95,7 +95,7 @@
       }
     }
 
-    // ---------- websocket ----------
+    // ---------- websocket (now passes raw number, not string) ----------
     function connectDeriv() {
       let ws = null;
       let subscriptionId = null;
@@ -114,9 +114,8 @@
             const data = JSON.parse(event.data);
             if (data.tick) {
               subscriptionId = data.tick.id;
-              const price = String(data.tick.quote);
-              const lastDigit = getLastDigitFromPrice(price);
-              onTick(lastDigit, price);
+              const rawPrice = data.tick.quote; // number
+              onTick(rawPrice);
             }
           } catch (e) { }
         };
@@ -144,7 +143,28 @@
       return { subscribe, unsubscribe, disconnect };
     }
 
-    // ---------- analysis functions ----------
+    // ---------- fetch symbol details to get decimal places ----------
+    async function fetchDecimalPlaces(symbol) {
+      try {
+        const response = await fetch(`https://api.deriv.com/api/v3/symbols?symbols=${symbol}&app_id=1089`);
+        const data = await response.json();
+        if (data.symbols && data.symbols[0]) {
+          const info = data.symbols[0];
+          // Try to get decimal places from common fields
+          if (info.decimal_places !== undefined) {
+            return info.decimal_places;
+          } else if (info.pip_size) {
+            // pip_size is the smallest price change, e.g., 0.001 -> 3 decimals
+            return Math.round(Math.log10(1 / info.pip_size));
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch symbol details", e);
+      }
+      return 3; // fallback to 3 decimals
+    }
+
+    // ---------- analysis functions (unchanged) ----------
     function computeDigitFrequency(digits) {
       const total = digits.length;
       const counts = Array(10).fill(0);
@@ -191,8 +211,8 @@
       if (prices.length < 2) return { riseCount: 0, fallCount: 0, sameCount: 0, totalMovements: 0, risePercent: 0, fallPercent: 0 };
       let rise = 0, fall = 0, same = 0;
       for (let i = 1; i < prices.length; i++) {
-        const prev = parseFloat(prices[i-1]);
-        const curr = parseFloat(prices[i]);
+        const prev = prices[i-1];
+        const curr = prices[i];
         if (curr > prev) rise++;
         else if (curr < prev) fall++;
         else same++;
@@ -209,7 +229,7 @@
       };
     }
 
-    // ---------- components ----------
+    // ---------- components (unchanged) ----------
     function AnalysisCard({ title, subtitle, children }) {
       return (
         <div className="bg-card border border-border rounded-lg p-5">
@@ -430,8 +450,8 @@
     function RecentMovements({ prices }) {
       const getMovement = (index) => {
         if (index === 0 || prices.length < 2) return '—';
-        const prev = parseFloat(prices[index-1]);
-        const curr = parseFloat(prices[index]);
+        const prev = prices[index-1];
+        const curr = prices[index];
         if (curr > prev) return 'R';
         if (curr < prev) return 'F';
         return '=';
@@ -467,14 +487,26 @@
       const [maxTicks, setMaxTicks] = useState(1000);
       const [inputValue, setInputValue] = useState("1000");
       const [digits, setDigits] = useState([]);
-      const [prices, setPrices] = useState([]);
+      const [prices, setPrices] = useState([]); // raw numbers for rise/fall
       const [symbol, setSymbol] = useState("R_100");
       const [isLive, setIsLive] = useState(false);
-      const [lastPrice, setLastPrice] = useState(null);
+      const [lastPrice, setLastPrice] = useState(null); // formatted price string for display
+      const [decimalPlaces, setDecimalPlaces] = useState(3); // default 3, will be updated
       const connectionRef = useRef(null);
 
       const [freqHistory, setFreqHistory] = useState([]);
       const lastSnapshotLength = useRef(0);
+
+      // Fetch decimal places when symbol changes
+      useEffect(() => {
+        let active = true;
+        const load = async () => {
+          const dp = await fetchDecimalPlaces(symbol);
+          if (active) setDecimalPlaces(dp);
+        };
+        load();
+        return () => { active = false; };
+      }, [symbol]);
 
       useEffect(() => {
         if (digits.length === 0) return;
@@ -511,18 +543,21 @@
         connectionRef.current = conn;
         setIsLive(true);
 
-        conn.subscribe(symbol, (digit, price) => {
-          setLastPrice(price);
+        conn.subscribe(symbol, (rawPrice) => {
+          // Format price with correct decimal places
+          const formatted = rawPrice.toFixed(decimalPlaces);
+          const digit = getLastDigitFromPrice(formatted);
+          setLastPrice(formatted);
           setDigits(prev => {
             const next = [...prev, digit];
             return next.length > maxTicks ? next.slice(next.length - maxTicks) : next;
           });
           setPrices(prev => {
-            const next = [...prev, price];
+            const next = [...prev, rawPrice];
             return next.length > maxTicks ? next.slice(next.length - maxTicks) : next;
           });
         });
-      }, [symbol, maxTicks, resetHistory]);
+      }, [symbol, maxTicks, resetHistory, decimalPlaces]);
 
       const stopStream = useCallback(() => {
         connectionRef.current?.disconnect();
