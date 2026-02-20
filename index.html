@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digits Analysis Terminal + Suggestions & History + Signal Scanner + Rise/Fall</title>
+  <title>Digits Analysis Terminal + Suggestions & History + Signal Scanner + Rise/Fall + Even/Odd Scanner</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -502,6 +502,58 @@
       );
     }
 
+    // ---------- NEW: Even/Odd Signal Scanner ----------
+    function EvenOddSignalScanner({ digits }) {
+      const counts = useMemo(() => {
+        const counts = Array(10).fill(0);
+        digits.forEach(d => counts[d]++);
+        return counts;
+      }, [digits]);
+
+      const percentages = useMemo(() => {
+        const total = digits.length || 1; // avoid division by zero
+        return counts.map(c => (c / total) * 100);
+      }, [counts, digits.length]);
+
+      const evenDigits = [0,2,4,6,8];
+      const oddDigits = [1,3,5,7,9];
+
+      const evenAboveThreshold = evenDigits.filter(d => percentages[d] >= 10.2).length;
+      const oddAboveThreshold = oddDigits.filter(d => percentages[d] >= 10.2).length;
+
+      const signal = useMemo(() => {
+        if (evenAboveThreshold >= 3 && oddAboveThreshold >= 3) {
+          return { type: 'BOTH', message: 'TRADE BOTH' };
+        } else if (evenAboveThreshold >= 3) {
+          return { type: 'EVEN', message: 'TRADE EVEN' };
+        } else if (oddAboveThreshold >= 3) {
+          return { type: 'ODD', message: 'TRADE ODD' };
+        }
+        return null;
+      }, [evenAboveThreshold, oddAboveThreshold]);
+
+      const borderColor = signal?.type === 'EVEN' ? 'border-profit' : signal?.type === 'ODD' ? 'border-loss' : signal?.type === 'BOTH' ? 'border-accent' : 'border-border';
+
+      return (
+        <AnalysisCard title="🎯 Even/Odd Signal Scanner" subtitle="Triggers when ≥3 even or odd digits exceed 10.2% frequency">
+          <div className={`p-4 rounded-lg border-4 ${borderColor} transition-colors duration-300`}>
+            {signal ? (
+              <div className="text-center">
+                <span className="text-2xl font-bold">{signal.message}</span>
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground">
+                No signal yet
+              </div>
+            )}
+            <div className="mt-2 text-xs text-muted-foreground text-center">
+              Even digits ≥10.2%: {evenAboveThreshold} | Odd digits ≥10.2%: {oddAboveThreshold}
+            </div>
+          </div>
+        </AnalysisCard>
+      );
+    }
+
     // ---------- main App ----------
     function Index() {
       const [maxTicks, setMaxTicks] = useState(1000);
@@ -638,7 +690,7 @@
           <header className="border-b border-border px-6 py-4">
             <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h1 className="text-xl font-bold text-foreground tracking-tight"><span className="text-primary">●</span> Digit Analysis Terminal + Suggestion & History + Signal Scanner + Rise/Fall + Consecutive Colors</h1>
+                <h1 className="text-xl font-bold text-foreground tracking-tight"><span className="text-primary">●</span> Digit Analysis Terminal + Suggestion & History + Signal Scanner + Rise/Fall + Consecutive Colors + Even/Odd Scanner</h1>
                 <p className="text-xs text-muted-foreground mt-0.5">Deriv Synthetic Indices — Live Digit Analysis</p>
               </div>
               <div className="flex items-center gap-3 text-xs font-mono">
@@ -720,6 +772,9 @@
                     <EvenOddDisplay data={evenOdd} />
                   </AnalysisCard>
                 </div>
+
+                {/* NEW: Even/Odd Signal Scanner placed right after the Even/Odd card */}
+                <EvenOddSignalScanner digits={digits} />
 
                 {/* Recent Digits card with consecutive highlight (yellow ring) */}
                 <AnalysisCard title="Recent Digits" subtitle="Last 50 ticks (newest first) — Yellow ring indicates consecutive same digit">
