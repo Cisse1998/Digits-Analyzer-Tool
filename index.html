@@ -564,9 +564,9 @@
         if (evenAboveThreshold >= 3 && oddAboveThreshold >= 3) {
           return { type: 'BOTH', message: 'TRADE BOTH' };
         } else if (evenAboveThreshold >= 3) {
-          return { type: 'EVEN', message: 'TRADE EVEN' };
-        } else if (oddAboveThreshold >= 3) {
           return { type: 'ODD', message: 'TRADE ODD' };
+        } else if (oddAboveThreshold >= 3) {
+          return { type: 'EVEN', message: 'TRADE EVEN' };
         }
         return null;
       }, [evenAboveThreshold, oddAboveThreshold]);
