@@ -470,7 +470,7 @@
       };
 
       return (
-        <AnalysisCard title="🔔 Signal Scanner (last 1000 ticks)" subtitle="Two‑step subtraction to find entry digit – triggers when highest digit appears">
+        <AnalysisCard title="🔔 Signal Scanner (last 1000 ticks)" subtitle="Exact digit prediction is shown below">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={toggleScanner}
@@ -493,7 +493,7 @@
                 <span className="text-muted-foreground">({prediction.highestPct.toFixed(1)}%)</span>
               </p>
               <p className="text-sm mt-1">
-                <span className="text-muted-foreground">two-step scanning:</span>{' '}
+                <span className="text-muted-foreground">Exact scanned is:</span>{' '}
                 <span className="font-bold text-profit text-lg">{prediction.targetDigit}</span>{' '}
                 <span className="text-muted-foreground">(probability {prediction.targetPct.toFixed(1)}%)</span>
               </p>
