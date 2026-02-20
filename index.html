@@ -398,38 +398,58 @@
       );
     }
 
-    // ---------- Signal Scanner Component (updated logic) ----------
-    function SignalScanner({ frequency, lastDigit }) {
+    // ---------- Signal Scanner Component (updated with two‑step subtraction) ----------
+    function SignalScanner({ digits, lastDigit }) {
       const [scannerActive, setScannerActive] = useState(false);
       const [lastSignal, setLastSignal] = useState(null);
+      const W = 1000; // window size
 
       const prediction = useMemo(() => {
-        if (!frequency || frequency.length === 0) return null;
+        const len = digits.length;
+        if (len === 0) return null;
+        // Take last W digits (or all if less)
+        const recentDigits = len <= W ? digits : digits.slice(len - W);
+        const counts = Array(10).fill(0);
+        recentDigits.forEach(d => counts[d]++);
+        const percentages = counts.map(c => (c / recentDigits.length) * 100);
         // Find digit with highest percentage
-        const max = frequency.reduce((a, b) => a.percentage > b.percentage ? a : b);
-        const highestPct = max.percentage;
-        
-        // First subtraction: highest - 0.5
+        let maxIdx = 0;
+        for (let i = 1; i < 10; i++) {
+          if (percentages[i] > percentages[maxIdx]) maxIdx = i;
+        }
+        const highestPct = percentages[maxIdx];
+        const triggerDigit = maxIdx;
+
+        // First subtraction: target1 = highestPct - 0.5
         const target1 = highestPct - 0.5;
         // Find digit closest to target1
-        const middle = frequency.reduce((prev, curr) => {
-          return Math.abs(curr.percentage - target1) < Math.abs(prev.percentage - target1) ? curr : prev;
-        });
-        
-        // Second subtraction: percentage of middle digit - 0.5
-        const target2 = middle.percentage - 0.5;
-        // Find digit closest to target2
-        const final = frequency.reduce((prev, curr) => {
-          return Math.abs(curr.percentage - target2) < Math.abs(prev.percentage - target2) ? curr : prev;
-        });
+        let closest1 = 0;
+        let minDiff1 = Math.abs(percentages[0] - target1);
+        for (let i = 1; i < 10; i++) {
+          const diff = Math.abs(percentages[i] - target1);
+          if (diff < minDiff1) {
+            minDiff1 = diff;
+            closest1 = i;
+          }
+        }
+        const firstTargetPct = percentages[closest1];
 
-        return {
-          triggerDigit: max.digit,
-          middleDigit: middle.digit,
-          targetDigit: final.digit,
-          targetPct: target2
-        };
-      }, [frequency]);
+        // Second subtraction: target2 = firstTargetPct - 0.5
+        const target2 = firstTargetPct - 0.5;
+        // Find digit closest to target2
+        let closest2 = 0;
+        let minDiff2 = Math.abs(percentages[0] - target2);
+        for (let i = 1; i < 10; i++) {
+          const diff = Math.abs(percentages[i] - target2);
+          if (diff < minDiff2) {
+            minDiff2 = diff;
+            closest2 = i;
+          }
+        }
+        const targetDigit = closest2;
+
+        return { triggerDigit, targetDigit, highestPct, target1, firstTargetPct, target2, targetPct: target2 };
+      }, [digits]);
 
       useEffect(() => {
         if (scannerActive && prediction && lastDigit === prediction.triggerDigit) {
@@ -443,7 +463,7 @@
       };
 
       return (
-        <AnalysisCard title="🔔 Signal Scanner" subtitle="Tracks last 1000 digits – triggers when most frequent digit appears">
+        <AnalysisCard title="🔔 Signal Scanner (last 1000 ticks)" subtitle="Two‑step subtraction to find entry digit – triggers when highest digit appears">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={toggleScanner}
@@ -461,23 +481,18 @@
           {prediction ? (
             <div>
               <p className="text-sm">
-                <span className="text-muted-foreground">Trigger digit:</span>{' '}
+                <span className="text-muted-foreground">Highest digit:</span>{' '}
                 <span className="font-bold text-highlight text-lg">{prediction.triggerDigit}</span>{' '}
-                <span className="text-muted-foreground">({frequency.find(f => f.digit === prediction.triggerDigit)?.percentage.toFixed(1)}%)</span>
+                <span className="text-muted-foreground">({prediction.highestPct.toFixed(1)}%)</span>
               </p>
               <p className="text-sm mt-1">
-                <span className="text-muted-foreground">After first -0.5%:</span>{' '}
-                <span className="font-bold text-blue-400 text-lg">{prediction.middleDigit}</span>{' '}
-                <span className="text-muted-foreground">(closest to {(frequency.find(f => f.digit === prediction.triggerDigit)?.percentage - 0.5).toFixed(1)}%)</span>
-              </p>
-              <p className="text-sm mt-1">
-                <span className="text-muted-foreground">Predicted digit:</span>{' '}
+                <span className="text-muted-foreground">After two subtractions → entry digit:</span>{' '}
                 <span className="font-bold text-profit text-lg">{prediction.targetDigit}</span>{' '}
                 <span className="text-muted-foreground">(closest to {prediction.targetPct.toFixed(1)}%)</span>
               </p>
               {lastSignal && scannerActive && (
                 <div className="mt-3 p-3 bg-profit/20 border border-profit rounded-md animate-pulse">
-                  <span className="font-mono text-sm">⚡ SIGNAL — Digit {prediction.triggerDigit} appeared! Enter on {prediction.targetDigit}</span>
+                  <span className="font-mono text-sm">⚡ SIGNAL — Digit {prediction.triggerDigit} (highest) appeared! Enter on {prediction.targetDigit}</span>
                 </div>
               )}
             </div>
@@ -524,18 +539,14 @@
       );
     }
 
-    // Even/Odd Signal Scanner
+    // ---------- Even/Odd Signal Scanner ----------
     function EvenOddSignalScanner({ digits }) {
-      const counts = useMemo(() => {
-        const counts = Array(10).fill(0);
-        digits.forEach(d => counts[d]++);
-        return counts;
-      }, [digits]);
-
-      const percentages = useMemo(() => {
-        const total = digits.length || 1; // avoid division by zero
-        return counts.map(c => (c / total) * 100);
-      }, [counts, digits.length]);
+      const W = 1000; // use last 1000 ticks
+      const len = digits.length;
+      const recentDigits = len <= W ? digits : digits.slice(len - W);
+      const counts = Array(10).fill(0);
+      recentDigits.forEach(d => counts[d]++);
+      const percentages = counts.map(c => (c / recentDigits.length) * 100);
 
       const evenDigits = [0,2,4,6,8];
       const oddDigits = [1,3,5,7,9];
@@ -557,7 +568,7 @@
       const borderColor = signal?.type === 'EVEN' ? 'border-profit' : signal?.type === 'ODD' ? 'border-loss' : signal?.type === 'BOTH' ? 'border-accent' : 'border-border';
 
       return (
-        <AnalysisCard title="🎯 Even/Odd Signal Scanner" subtitle="Triggers when ≥3 even or odd digits exceed 10.2% frequency">
+        <AnalysisCard title="🎯 Even/Odd Signal Scanner" subtitle="Triggers when ≥3 even or odd digits exceed 10.2% frequency (last 1000 ticks)">
           <div className={`p-4 rounded-lg border-4 ${borderColor} transition-colors duration-300`}>
             {signal ? (
               <div className="text-center">
@@ -756,7 +767,7 @@
 
                 <SuggestionCard frequency={frequency} />
 
-                <SignalScanner frequency={frequency} lastDigit={currentDigit} />
+                <SignalScanner digits={digits} lastDigit={currentDigit} />
 
                 {/* Large last digit display with dynamic color based on streak */}
                 <div className="text-6xl md:text-7xl font-bold text-center py-4 border border-profit/30 rounded-lg bg-profit/5">
@@ -795,10 +806,8 @@
                   </AnalysisCard>
                 </div>
 
-                {/* Even/Odd Signal Scanner */}
                 <EvenOddSignalScanner digits={digits} />
 
-                {/* Recent Digits card with consecutive highlight (yellow ring) */}
                 <AnalysisCard title="Recent Digits" subtitle="Last 50 ticks (newest first) — Yellow ring indicates consecutive same digit">
                   <div className="flex flex-wrap gap-1.5">
                     {recentDigits.map((d, i) => (
