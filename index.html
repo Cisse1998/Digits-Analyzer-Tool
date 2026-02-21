@@ -257,23 +257,26 @@
       );
     }
 
-    // Updated DigitCircle: default border, pointer below, arc (green/red) below pointer
+    // Updated DigitCircle: arc inside the circle
     function DigitCircle({ digit, percentage, isHighest, isLowest, isCurrent }) {
       return (
         <div className="flex flex-col items-center mx-1">
-          <div className="w-16 h-16 rounded-full border-4 border-border flex flex-col items-center justify-center bg-secondary">
-            <span className="text-xl font-bold">{digit}</span>
-            <span className="text-xs">{percentage.toFixed(1)}%</span>
+          <div className="relative w-16 h-16">
+            {/* Base circle with neutral border */}
+            <div className="absolute inset-0 rounded-full border-4 border-border bg-secondary"></div>
+            {/* Colored arc inside (at bottom) */}
+            {isHighest && <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-profit rounded-full z-0"></div>}
+            {isLowest && <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-loss rounded-full z-0"></div>}
+            {/* Digit and percentage */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+              <span className="text-xl font-bold">{digit}</span>
+              <span className="text-xs">{percentage.toFixed(1)}%</span>
+            </div>
           </div>
           {isCurrent && (
             <div className="text-white text-sm leading-3 mt-1">▲</div>
           )}
-          {!isCurrent && <div className="h-4" />} {/* spacer to keep alignment */}
-          {/* Arc: a thin rounded line */}
-          {(isHighest || isLowest) && (
-            <div className={`w-6 h-1 rounded-full mt-1 ${isHighest ? 'bg-profit' : 'bg-loss'}`} />
-          )}
-          {!isHighest && !isLowest && <div className="h-2 mt-1" />}
+          {!isCurrent && <div className="h-4" />}
         </div>
       );
     }
@@ -813,6 +816,7 @@
       const percentages = frequency1000.map(f => f.percentage);
       const maxPct = percentages.length ? Math.max(...percentages) : 0;
       const minPct = percentages.length ? Math.min(...percentages) : 0;
+      const hasRange = maxPct > minPct;
 
       // Split digits into two groups
       const upperDigits = frequency1000.filter(f => f.digit <= 4);
@@ -881,8 +885,8 @@
                           key={f.digit}
                           digit={f.digit}
                           percentage={f.percentage}
-                          isHighest={f.percentage === maxPct}
-                          isLowest={f.percentage === minPct}
+                          isHighest={hasRange && f.percentage === maxPct}
+                          isLowest={hasRange && f.percentage === minPct}
                           isCurrent={currentDigit === f.digit}
                         />
                       ))}
@@ -894,8 +898,8 @@
                           key={f.digit}
                           digit={f.digit}
                           percentage={f.percentage}
-                          isHighest={f.percentage === maxPct}
-                          isLowest={f.percentage === minPct}
+                          isHighest={hasRange && f.percentage === maxPct}
+                          isLowest={hasRange && f.percentage === minPct}
                           isCurrent={currentDigit === f.digit}
                         />
                       ))}
