@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digits Analysis Terminal + Configurable Even/Odd Scanner</title>
+  <title>Digits Analysis Terminal + Configurable Even/Odd Scanner + Trade Predictions</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -592,6 +592,120 @@
       );
     }
 
+    // ---------- NEW: Trade Predictions Panel ----------
+    function TradePredictions({ frequency, overUnder, evenOdd, riseFall }) {
+      if (!frequency || frequency.length === 0) return null;
+
+      // Helper to get confidence label based on absolute deviation
+      const getConfidence = (dev) => {
+        const absDev = Math.abs(dev);
+        if (absDev >= 5) return { label: 'HIGH', color: 'text-profit' };
+        if (absDev >= 2) return { label: 'MEDIUM', color: 'text-yellow-400' };
+        return { label: 'LOW', color: 'text-muted-foreground' };
+      };
+
+      // Matches/Differs: find most overrepresented and underrepresented digits
+      const deviations = frequency.map(f => ({ digit: f.digit, dev: f.percentage - 10 }));
+      const sorted = [...deviations].sort((a, b) => Math.abs(b.dev) - Math.abs(a.dev));
+      const topOver = sorted.filter(d => d.dev > 0)[0];
+      const topUnder = sorted.filter(d => d.dev < 0)[0];
+
+      // Over/Under: find barrier with largest deviation (over or under)
+      let bestOverUnder = null;
+      let maxOverUnderDev = 0;
+      overUnder.forEach(row => {
+        const expectedOver = (9 - row.digit) / 10 * 100;
+        const expectedUnder = row.digit / 10 * 100;
+        const overDev = row.overPercentage - expectedOver;
+        const underDev = row.underPercentage - expectedUnder;
+        if (Math.abs(overDev) > Math.abs(maxOverUnderDev)) {
+          maxOverUnderDev = overDev;
+          bestOverUnder = { type: 'OVER', digit: row.digit, dev: overDev, actual: row.overPercentage, expected: expectedOver };
+        }
+        if (Math.abs(underDev) > Math.abs(maxOverUnderDev)) {
+          maxOverUnderDev = underDev;
+          bestOverUnder = { type: 'UNDER', digit: row.digit, dev: underDev, actual: row.underPercentage, expected: expectedUnder };
+        }
+      });
+
+      // Even/Odd
+      const evenDev = evenOdd.evenPercentage - 50;
+      const oddDev = evenOdd.oddPercentage - 50;
+      const evenOddBest = Math.abs(evenDev) >= Math.abs(oddDev) ? 
+        { type: 'EVEN', dev: evenDev, actual: evenOdd.evenPercentage } : 
+        { type: 'ODD', dev: oddDev, actual: evenOdd.oddPercentage };
+
+      // Rise/Fall
+      const riseDev = riseFall.risePercent - 50;
+      const fallDev = riseFall.fallPercent - 50;
+      const riseFallBest = Math.abs(riseDev) >= Math.abs(fallDev) ? 
+        { type: 'RISE', dev: riseDev, actual: riseFall.risePercent } : 
+        { type: 'FALL', dev: fallDev, actual: riseFall.fallPercent };
+
+      return (
+        <AnalysisCard title="📉 Trade Predictions" subtitle="Best contracts based on statistical deviation (last 1000 ticks)">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Matches/Differs */}
+            <div className="bg-secondary rounded-lg p-3">
+              <h4 className="text-xs uppercase tracking-wider text-highlight mb-2">Matches / Differs</h4>
+              {topOver && (
+                <div className="flex justify-between items-center text-sm py-1">
+                  <span className="font-mono">Digit {topOver.digit} (over)</span>
+                  <span className="font-mono text-profit">+{topOver.dev.toFixed(1)}%</span>
+                  <span className={`text-xs font-bold ${getConfidence(topOver.dev).color}`}>{getConfidence(topOver.dev).label}</span>
+                </div>
+              )}
+              {topUnder && (
+                <div className="flex justify-between items-center text-sm py-1">
+                  <span className="font-mono">Digit {topUnder.digit} (under)</span>
+                  <span className="font-mono text-loss">{topUnder.dev.toFixed(1)}%</span>
+                  <span className={`text-xs font-bold ${getConfidence(topUnder.dev).color}`}>{getConfidence(topUnder.dev).label}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Over/Under */}
+            {bestOverUnder && (
+              <div className="bg-secondary rounded-lg p-3">
+                <h4 className="text-xs uppercase tracking-wider text-highlight mb-2">Over / Under</h4>
+                <div className="flex justify-between items-center text-sm py-1">
+                  <span className="font-mono">Barrier {bestOverUnder.digit} {bestOverUnder.type}</span>
+                  <span className={`font-mono ${bestOverUnder.dev > 0 ? 'text-profit' : 'text-loss'}`}>
+                    {bestOverUnder.dev > 0 ? '+' : ''}{bestOverUnder.dev.toFixed(1)}%
+                  </span>
+                  <span className={`text-xs font-bold ${getConfidence(bestOverUnder.dev).color}`}>{getConfidence(bestOverUnder.dev).label}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Even/Odd */}
+            <div className="bg-secondary rounded-lg p-3">
+              <h4 className="text-xs uppercase tracking-wider text-highlight mb-2">Even / Odd</h4>
+              <div className="flex justify-between items-center text-sm py-1">
+                <span className="font-mono">{evenOddBest.type}</span>
+                <span className={`font-mono ${evenOddBest.dev > 0 ? 'text-profit' : 'text-loss'}`}>
+                  {evenOddBest.dev > 0 ? '+' : ''}{evenOddBest.dev.toFixed(1)}%
+                </span>
+                <span className={`text-xs font-bold ${getConfidence(evenOddBest.dev).color}`}>{getConfidence(evenOddBest.dev).label}</span>
+              </div>
+            </div>
+
+            {/* Rise/Fall */}
+            <div className="bg-secondary rounded-lg p-3">
+              <h4 className="text-xs uppercase tracking-wider text-highlight mb-2">Rise / Fall</h4>
+              <div className="flex justify-between items-center text-sm py-1">
+                <span className="font-mono">{riseFallBest.type}</span>
+                <span className={`font-mono ${riseFallBest.dev > 0 ? 'text-profit' : 'text-loss'}`}>
+                  {riseFallBest.dev > 0 ? '+' : ''}{riseFallBest.dev.toFixed(1)}%
+                </span>
+                <span className={`text-xs font-bold ${getConfidence(riseFallBest.dev).color}`}>{getConfidence(riseFallBest.dev).label}</span>
+              </div>
+            </div>
+          </div>
+        </AnalysisCard>
+      );
+    }
+
     // ---------- main App ----------
     function Index() {
       const [maxTicks, setMaxTicks] = useState(1000);
@@ -734,7 +848,7 @@
           <header className="border-b border-border px-6 py-4">
             <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h1 className="text-xl font-bold text-foreground tracking-tight"><span className="text-primary">●</span> Digit Analysis Terminal + Configurable Even/Odd Scanner</h1>
+                <h1 className="text-xl font-bold text-foreground tracking-tight"><span className="text-primary">●</span> Digit Analysis Terminal + Configurable Even/Odd Scanner + Trade Predictions</h1>
                 <p className="text-xs text-muted-foreground mt-0.5">Deriv Synthetic Indices — Live Digit Analysis</p>
               </div>
               <div className="flex items-center gap-3 text-xs font-mono">
@@ -758,7 +872,7 @@
                 <input type="number" value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === "Enter" && handleMaxTicksChange()} onBlur={handleMaxTicksChange} min={10} max={50000} className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-mono text-foreground w-24 focus:outline-none focus:ring-1 focus:ring-primary" />
               </div>
 
-              {/* New controls for Even/Odd scanner */}
+              {/* Controls for Even/Odd scanner */}
               <div className="flex items-center gap-2">
                 <label className="text-sm text-muted-foreground">Threshold %:</label>
                 <input type="number" value={threshold} onChange={e => setThreshold(parseFloat(e.target.value))} step="0.1" min="0" max="100" className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-mono text-foreground w-20 focus:outline-none focus:ring-1 focus:ring-primary" />
@@ -829,6 +943,9 @@
                 </div>
 
                 <EvenOddSignalScanner digits={digits} threshold={threshold} minCount={minCount} />
+
+                {/* NEW: Trade Predictions Panel */}
+                <TradePredictions frequency={frequency1000} overUnder={overUnder} evenOdd={evenOdd} riseFall={riseFall} />
 
                 <AnalysisCard title="Recent Digits" subtitle="Last 50 ticks (newest first) — Yellow ring indicates consecutive same digit">
                   <div className="flex flex-wrap gap-1.5">
