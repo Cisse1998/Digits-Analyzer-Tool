@@ -257,21 +257,26 @@
       );
     }
 
-    // New DigitCircle component – replaces DigitBar
+    // Updated DigitCircle with pointer below and colored dot below pointer
     function DigitCircle({ digit, percentage, isHighest, isLowest, isCurrent }) {
       let borderColor = 'border-border';
       if (isHighest) borderColor = 'border-profit';
       if (isLowest) borderColor = 'border-loss';
-      // if both highest and lowest (e.g., all equal), profit takes precedence (green)
+      // if both highest and lowest (all equal), profit takes precedence (green)
       return (
-        <div className="flex flex-col items-center relative">
-          {isCurrent && (
-            <div className="absolute -top-5 text-white text-sm">▲</div>
-          )}
+        <div className="flex flex-col items-center mx-1">
           <div className={`w-16 h-16 rounded-full border-4 ${borderColor} flex flex-col items-center justify-center bg-secondary`}>
             <span className="text-xl font-bold">{digit}</span>
             <span className="text-xs">{percentage.toFixed(1)}%</span>
           </div>
+          {isCurrent && (
+            <div className="text-white text-sm leading-3 mt-1">▲</div>
+          )}
+          {!isCurrent && <div className="h-4" />} {/* spacer to keep alignment */}
+          {(isHighest || isLowest) && (
+            <div className={`w-2 h-2 rounded-full mt-1 ${isHighest ? 'bg-profit' : 'bg-loss'}`} />
+          )}
+          {!isHighest && !isLowest && <div className="h-2 mt-1" />}
         </div>
       );
     }
@@ -812,6 +817,10 @@
       const maxPct = percentages.length ? Math.max(...percentages) : 0;
       const minPct = percentages.length ? Math.min(...percentages) : 0;
 
+      // Split digits into two groups
+      const upperDigits = frequency1000.filter(f => f.digit <= 4);
+      const lowerDigits = frequency1000.filter(f => f.digit >= 5);
+
       return (
         <div className="min-h-screen bg-background">
           <header className="border-b border-border px-6 py-4">
@@ -867,17 +876,33 @@
             {digits.length > 0 && (
               <>
                 <AnalysisCard title="Digit Frequency" subtitle={`${selectedLabel} — last ${windowSizeDisplay} ticks (expected 10.0% each)`}>
-                  <div className="flex justify-center items-end gap-2 pt-6 pb-2 relative">
-                    {frequency1000.map((f) => (
-                      <DigitCircle
-                        key={f.digit}
-                        digit={f.digit}
-                        percentage={f.percentage}
-                        isHighest={f.percentage === maxPct}
-                        isLowest={f.percentage === minPct}
-                        isCurrent={currentDigit === f.digit}
-                      />
-                    ))}
+                  <div className="flex flex-col items-center space-y-4">
+                    {/* Upper row: digits 0-4 */}
+                    <div className="flex justify-center flex-wrap gap-2">
+                      {upperDigits.map((f) => (
+                        <DigitCircle
+                          key={f.digit}
+                          digit={f.digit}
+                          percentage={f.percentage}
+                          isHighest={f.percentage === maxPct}
+                          isLowest={f.percentage === minPct}
+                          isCurrent={currentDigit === f.digit}
+                        />
+                      ))}
+                    </div>
+                    {/* Lower row: digits 5-9 */}
+                    <div className="flex justify-center flex-wrap gap-2">
+                      {lowerDigits.map((f) => (
+                        <DigitCircle
+                          key={f.digit}
+                          digit={f.digit}
+                          percentage={f.percentage}
+                          isHighest={f.percentage === maxPct}
+                          isLowest={f.percentage === minPct}
+                          isCurrent={currentDigit === f.digit}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </AnalysisCard>
 
