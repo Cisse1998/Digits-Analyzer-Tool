@@ -1036,6 +1036,9 @@
                   </div>
                 </AnalysisCard>
 
+                {/* AI Prediction Card placed right after Digit Frequency */}
+                <AIPrediction digits={digits} />
+
                 <SuggestionCard frequency={frequency1000} />
 
                 <SignalScanner digits={digits} lastDigit={currentDigit} />
@@ -1091,9 +1094,6 @@
                     ))}
                   </div>
                 </AnalysisCard>
-
-                {/* AI Prediction Card */}
-                <AIPrediction digits={digits} />
 
                 <TradePredictions frequency={frequency1000} overUnder={overUnder} evenOdd={evenOdd} riseFall={riseFall} />
               </>
