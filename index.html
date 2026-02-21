@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digits Analysis Terminal + Configurable Even/Odd Scanner + Trade Predictions</title>
+  <title>Digits Analysis Terminal + Configurable Even/Odd Scanner + Trade Predictions + Circle Display</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -257,17 +257,21 @@
       );
     }
 
-    function DigitBar({ digit, percentage, maxPercentage = 100, color = "highlight" }) {
-      const width = Math.max((percentage / maxPercentage) * 100, 2);
-      const isHigh = percentage > 12;
-      const isLow = percentage < 8;
-      const colorMap = { profit: "bg-profit", loss: "bg-loss", highlight: "bg-highlight", accent: "bg-accent" };
-      const barColor = isHigh ? "bg-profit" : isLow ? "bg-loss" : colorMap[color];
+    // New DigitCircle component – replaces DigitBar
+    function DigitCircle({ digit, percentage, isHighest, isLowest, isCurrent }) {
+      let borderColor = 'border-border';
+      if (isHighest) borderColor = 'border-profit';
+      if (isLowest) borderColor = 'border-loss';
+      // if both highest and lowest (e.g., all equal), profit takes precedence (green)
       return (
-        <div className="flex items-center gap-3 group">
-          <span className="font-mono text-sm w-6 text-muted-foreground font-semibold">{digit}</span>
-          <div className="flex-1 h-7 bg-secondary rounded-sm overflow-hidden relative"><div className={`h-full rounded-sm transition-all duration-500 ${barColor}`} style={{ width: `${width}%` }} /></div>
-          <span className={`font-mono text-sm w-16 text-right font-semibold ${isHigh ? "text-profit" : isLow ? "text-loss" : "text-foreground"}`}>{percentage.toFixed(1)}%</span>
+        <div className="flex flex-col items-center relative">
+          {isCurrent && (
+            <div className="absolute -top-5 text-white text-sm">▲</div>
+          )}
+          <div className={`w-16 h-16 rounded-full border-4 ${borderColor} flex flex-col items-center justify-center bg-secondary`}>
+            <span className="text-xl font-bold">{digit}</span>
+            <span className="text-xs">{percentage.toFixed(1)}%</span>
+          </div>
         </div>
       );
     }
@@ -570,7 +574,6 @@
     function TradePredictions({ frequency, overUnder, evenOdd, riseFall }) {
       if (!frequency || frequency.length === 0) return null;
 
-      // Helper to get confidence label based on absolute deviation
       const getConfidence = (dev) => {
         const absDev = Math.abs(dev);
         if (absDev >= 5) return { label: 'HIGH', color: 'text-profit' };
@@ -578,13 +581,11 @@
         return { label: 'LOW', color: 'text-muted-foreground' };
       };
 
-      // Matches/Differs: find most overrepresented and underrepresented digits
       const deviations = frequency.map(f => ({ digit: f.digit, dev: f.percentage - 10 }));
       const sorted = [...deviations].sort((a, b) => Math.abs(b.dev) - Math.abs(a.dev));
       const topOver = sorted.filter(d => d.dev > 0)[0];
       const topUnder = sorted.filter(d => d.dev < 0)[0];
 
-      // Over/Under: find barrier with largest deviation (over or under)
       let bestOverUnder = null;
       let maxOverUnderDev = 0;
       overUnder.forEach(row => {
@@ -602,14 +603,12 @@
         }
       });
 
-      // Even/Odd
       const evenDev = evenOdd.evenPercentage - 50;
       const oddDev = evenOdd.oddPercentage - 50;
       const evenOddBest = Math.abs(evenDev) >= Math.abs(oddDev) ? 
         { type: 'EVEN', dev: evenDev, actual: evenOdd.evenPercentage } : 
         { type: 'ODD', dev: oddDev, actual: evenOdd.oddPercentage };
 
-      // Rise/Fall
       const riseDev = riseFall.risePercent - 50;
       const fallDev = riseFall.fallPercent - 50;
       const riseFallBest = Math.abs(riseDev) >= Math.abs(fallDev) ? 
@@ -619,7 +618,6 @@
       return (
         <AnalysisCard title="📉 Trade Predictions" subtitle="Best contracts based on statistical deviation (last 1000 ticks)">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Matches/Differs */}
             <div className="bg-secondary rounded-lg p-3">
               <h4 className="text-xs uppercase tracking-wider text-highlight mb-2">Matches / Differs</h4>
               {topOver && (
@@ -638,7 +636,6 @@
               )}
             </div>
 
-            {/* Over/Under */}
             {bestOverUnder && (
               <div className="bg-secondary rounded-lg p-3">
                 <h4 className="text-xs uppercase tracking-wider text-highlight mb-2">Over / Under</h4>
@@ -652,7 +649,6 @@
               </div>
             )}
 
-            {/* Even/Odd */}
             <div className="bg-secondary rounded-lg p-3">
               <h4 className="text-xs uppercase tracking-wider text-highlight mb-2">Even / Odd</h4>
               <div className="flex justify-between items-center text-sm py-1">
@@ -664,7 +660,6 @@
               </div>
             </div>
 
-            {/* Rise/Fall */}
             <div className="bg-secondary rounded-lg p-3">
               <h4 className="text-xs uppercase tracking-wider text-highlight mb-2">Rise / Fall</h4>
               <div className="flex justify-between items-center text-sm py-1">
@@ -731,10 +726,6 @@
       const matchDiffer = useMemo(() => computeMatchDiffer(digits), [digits]);
       const evenOdd = useMemo(() => computeEvenOdd(digits), [digits]);
       const riseFall = useMemo(() => computeRiseFall(prices), [prices]);
-      const maxFreqPct = useMemo(() => {
-        if (frequency1000.length === 0) return 15;
-        return Math.max(...frequency1000.map(f => f.percentage), 15);
-      }, [frequency1000]);
 
       const startStream = useCallback(() => {
         if (connectionRef.current) connectionRef.current.disconnect();
@@ -816,12 +807,17 @@
 
       const windowSizeDisplay = digits.length < 1000 ? digits.length : 1000;
 
+      // Determine highest and lowest percentages for circles
+      const percentages = frequency1000.map(f => f.percentage);
+      const maxPct = percentages.length ? Math.max(...percentages) : 0;
+      const minPct = percentages.length ? Math.min(...percentages) : 0;
+
       return (
         <div className="min-h-screen bg-background">
           <header className="border-b border-border px-6 py-4">
             <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h1 className="text-xl font-bold text-foreground tracking-tight"><span className="text-primary">●</span> Digit Analysis Terminal + Configurable Even/Odd Scanner + Trade Predictions</h1>
+                <h1 className="text-xl font-bold text-foreground tracking-tight"><span className="text-primary">●</span> Digit Analysis Terminal + Configurable Even/Odd Scanner + Trade Predictions + Circle Display</h1>
                 <p className="text-xs text-muted-foreground mt-0.5">Deriv Synthetic Indices — Live Digit Analysis</p>
               </div>
               <div className="flex items-center gap-3 text-xs font-mono">
@@ -871,7 +867,18 @@
             {digits.length > 0 && (
               <>
                 <AnalysisCard title="Digit Frequency" subtitle={`${selectedLabel} — last ${windowSizeDisplay} ticks (expected 10.0% each)`}>
-                  <div className="space-y-1.5">{frequency1000.map(f => <DigitBar key={f.digit} digit={f.digit} percentage={f.percentage} maxPercentage={maxFreqPct} />)}</div>
+                  <div className="flex justify-center items-end gap-2 pt-6 pb-2 relative">
+                    {frequency1000.map((f) => (
+                      <DigitCircle
+                        key={f.digit}
+                        digit={f.digit}
+                        percentage={f.percentage}
+                        isHighest={f.percentage === maxPct}
+                        isLowest={f.percentage === minPct}
+                        isCurrent={currentDigit === f.digit}
+                      />
+                    ))}
+                  </div>
                 </AnalysisCard>
 
                 <SuggestionCard frequency={frequency1000} />
@@ -930,7 +937,6 @@
                   </div>
                 </AnalysisCard>
 
-                {/* Trade Predictions placed here, directly after Recent Digits */}
                 <TradePredictions frequency={frequency1000} overUnder={overUnder} evenOdd={evenOdd} riseFall={riseFall} />
 
                 <AnalysisCard title="Frequency History (last 30 snapshots)" subtitle="Every 10 ticks — lines for most deviating digits">
