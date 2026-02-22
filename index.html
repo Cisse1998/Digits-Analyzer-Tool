@@ -509,7 +509,7 @@
     }
 
     // ---------- Even/Odd Signal Scanner (last 1000 ticks) with configurable threshold and min count ----------
-    function EvenOddSignalScanner({ digits, threshold, minCount }) {
+    function EvenOddSignalScanner({ digits, threshold, setThreshold, minCount, setMinCount }) {
       const W = 1000;
       const len = digits.length;
       const recentDigits = len <= W ? digits : digits.slice(len - W);
@@ -537,7 +537,35 @@
       const borderColor = signal?.type === 'EVEN' ? 'border-profit' : signal?.type === 'ODD' ? 'border-loss' : signal?.type === 'BOTH' ? 'border-accent' : 'border-border';
 
       return (
-        <AnalysisCard title="🎯 Even/Odd Signal Scanner" subtitle={`Threshold: ${threshold.toFixed(1)}%, Min digits: ${minCount}`}>
+        <AnalysisCard title="🎯 Even/Odd Signal Scanner" subtitle="Controls just below Even/Odd card">
+          {/* Controls moved here */}
+          <div className="flex flex-wrap items-center gap-4 mb-4 pb-2 border-b border-border">
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">Threshold %:</label>
+              <input
+                type="number"
+                value={threshold}
+                onChange={(e) => setThreshold(parseFloat(e.target.value))}
+                step="0.1"
+                min="0"
+                max="100"
+                className="bg-secondary border border-border rounded px-2 py-1 text-sm font-mono text-foreground w-20 focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">Min digits:</label>
+              <input
+                type="number"
+                value={minCount}
+                onChange={(e) => setMinCount(parseInt(e.target.value))}
+                step="1"
+                min="1"
+                max="5"
+                className="bg-secondary border border-border rounded px-2 py-1 text-sm font-mono text-foreground w-16 focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          </div>
+
           <div className={`p-4 rounded-lg border-4 ${borderColor} transition-colors duration-300`}>
             {signal ? (
               <div className="text-center">
@@ -1021,7 +1049,7 @@
           <header className="border-b border-border px-6 py-4">
             <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h1 className="text-xl font-bold text-foreground tracking-tight"><span className="text-primary">●</span> Digit Analysis Terminal + AI Prediction + Configurable Even/Odd Scanner + Trade Predictions + Arc Display</h1>
+                <h1 className="text-xl font-bold text-foreground tracking-tight"><span className="text-primary">●</span> Digit Analysis Terminal + AI Prediction + Even/Odd Scanner + Trade Predictions + Arc Display</h1>
                 <p className="text-xs text-muted-foreground mt-0.5">Deriv Synthetic Indices — Live Digit Analysis</p>
               </div>
               <div className="flex items-center gap-3 text-xs font-mono">
@@ -1057,16 +1085,6 @@
                   <option value="light">Light</option>
                   <option value="system">System</option>
                 </select>
-              </div>
-
-              {/* Controls for Even/Odd scanner */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-muted-foreground">Threshold %:</label>
-                <input type="number" value={threshold} onChange={e => setThreshold(parseFloat(e.target.value))} step="0.1" min="0" max="100" className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-mono text-foreground w-20 focus:outline-none focus:ring-1 focus:ring-primary" />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-muted-foreground">Min digits:</label>
-                <input type="number" value={minCount} onChange={e => setMinCount(parseInt(e.target.value))} step="1" min="1" max="5" className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-mono text-foreground w-16 focus:outline-none focus:ring-1 focus:ring-primary" />
               </div>
 
               <div className="flex gap-2 ml-auto">
@@ -1159,7 +1177,14 @@
                   </AnalysisCard>
                 </div>
 
-                <EvenOddSignalScanner digits={digits} threshold={threshold} minCount={minCount} />
+                {/* Even/Odd Signal Scanner with controls inside, placed right after the Even/Odd card */}
+                <EvenOddSignalScanner
+                  digits={digits}
+                  threshold={threshold}
+                  setThreshold={setThreshold}
+                  minCount={minCount}
+                  setMinCount={setMinCount}
+                />
 
                 <AnalysisCard title="Recent Digits" subtitle="Last 50 ticks (newest first) — Yellow ring indicates consecutive same digit">
                   <div className="flex flex-wrap gap-1.5">
