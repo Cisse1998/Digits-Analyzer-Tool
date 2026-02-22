@@ -525,7 +525,7 @@
 
       const signal = useMemo(() => {
         if (evenAboveThreshold >= minCount && oddAboveThreshold >= minCount) {
-          return { type: 'BOTH OR IGNORE', message: 'TRADE BOTH OR IGNORE' };
+          return { type: 'BOTH', message: 'TRADE BOTH' };
         } else if (evenAboveThreshold >= minCount) {
           return { type: 'ODD', message: 'TRADE ODD' };
         } else if (oddAboveThreshold >= minCount) {
@@ -683,6 +683,92 @@
                 </span>
                 <span className={`text-xs font-bold ${getConfidence(riseFallBest.dev).color}`}>{getConfidence(riseFallBest.dev).label}</span>
               </div>
+            </div>
+          </div>
+        </AnalysisCard>
+      );
+    }
+
+    // ---------- Over/Under Signal Scanner (30s appearance probability) ----------
+    function OverUnderSignalScanner({ digits }) {
+      const W = 1000;
+      const N = 90; // expected ticks in 30s
+      const len = digits.length;
+      if (len === 0) return null;
+
+      const recentDigits = len <= W ? digits : digits.slice(len - W);
+      const counts = Array(10).fill(0);
+      recentDigits.forEach(d => counts[d]++);
+      const windowSize = recentDigits.length;
+
+      // Probabilities P_i = count_i / windowSize
+      const P = counts.map(c => c / windowSize);
+
+      // 30s appearance probability A_i = 1 - (1 - P_i)^N
+      const A = P.map(p => 1 - Math.pow(1 - p, N));
+
+      // Market bias Δ = max(P_i) - 0.10
+      const maxP = Math.max(...P);
+      const delta = maxP - 0.10;
+
+      // Thresholds
+      const strongThreshold = 0.95;
+      const weakThreshold = 0.85;
+
+      // Determine which digits qualify
+      const strongSignals = [];
+      const weakSignals = [];
+      for (let i = 0; i < 10; i++) {
+        if (A[i] >= strongThreshold) {
+          strongSignals.push(i);
+        } else if (A[i] >= weakThreshold) {
+          weakSignals.push(i);
+        }
+      }
+
+      // Check if market is too uniform
+      const uniformWarning = delta < 0.02;
+
+      return (
+        <AnalysisCard title="🔮 Over/Under Signal Scanner (30s)" subtitle="Probability digit appears at least once in next 30s (≈90 ticks)">
+          {uniformWarning && (
+            <div className="mb-3 p-2 bg-yellow-500/20 border border-yellow-500 rounded text-center text-sm">
+              ⚠️ Market too uniform (Δ = {(delta*100).toFixed(1)}% < 2%) – signals may be unreliable
+            </div>
+          )}
+          <div className="space-y-3">
+            {strongSignals.length === 0 && weakSignals.length === 0 ? (
+              <div className="text-center text-muted-foreground py-2">No significant signals (all Aᵢ &lt; 85%)</div>
+            ) : (
+              <>
+                {strongSignals.length > 0 && (
+                  <div>
+                    <h4 className="text-xs uppercase tracking-wider text-profit mb-2">🟢 STRONG (≥95%)</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {strongSignals.map(d => (
+                        <div key={d} className="bg-profit/20 border border-profit rounded px-3 py-1 text-sm font-mono">
+                          Digit {d} – {(A[d]*100).toFixed(1)}%
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {weakSignals.length > 0 && (
+                  <div>
+                    <h4 className="text-xs uppercase tracking-wider text-yellow-400 mb-2">🟡 WEAK (85–95%)</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {weakSignals.map(d => (
+                        <div key={d} className="bg-yellow-400/20 border border-yellow-400 rounded px-3 py-1 text-sm font-mono">
+                          Digit {d} – {(A[d]*100).toFixed(1)}%
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            <div className="text-xs text-muted-foreground border-t border-border pt-2">
+              Based on last {windowSize} ticks | Pᵢ = countᵢ / {windowSize} | Aᵢ = 1-(1-Pᵢ)^{N} with N=90
             </div>
           </div>
         </AnalysisCard>
@@ -1200,6 +1286,9 @@
                 </AnalysisCard>
 
                 <TradePredictions frequency={frequency1000} overUnder={overUnder} evenOdd={evenOdd} riseFall={riseFall} />
+
+                {/* NEW: Over/Under Signal Scanner */}
+                <OverUnderSignalScanner digits={digits} />
               </>
             )}
           </main>
