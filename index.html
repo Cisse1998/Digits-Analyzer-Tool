@@ -941,6 +941,54 @@
       );
     }
 
+    // ---------- NEW: Even/Odd Momentum Shift Detector ----------
+    function EvenOddMomentum({ evenOdd }) {
+      const prevEvenRef = useRef(null);
+      const currentEven = evenOdd.evenPercentage;
+      const threshold = 1.5; // percentage points
+
+      let delta = null;
+      let direction = null;
+      let alert = null;
+
+      if (prevEvenRef.current !== null) {
+        delta = currentEven - prevEvenRef.current;
+        if (Math.abs(delta) >= threshold) {
+          direction = delta > 0 ? 'Even' : 'Odd';
+          alert = `⚡ ${direction} gaining momentum (Δ = ${delta > 0 ? '+' : ''}${delta.toFixed(1)}%) – possible reversal to ${direction}`;
+        }
+      }
+
+      // Update ref after render
+      useEffect(() => {
+        prevEvenRef.current = currentEven;
+      });
+
+      return (
+        <AnalysisCard title="📈 Even/Odd Momentum Shift" subtitle="Detects significant percentage changes (threshold 1.5%)">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Current Even:</span>
+              <span className="font-mono text-profit">{currentEven.toFixed(1)}%</span>
+            </div>
+            {delta !== null && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Change from previous:</span>
+                <span className={`font-mono ${delta >= 0 ? 'text-profit' : 'text-loss'}`}>
+                  {delta > 0 ? '+' : ''}{delta.toFixed(1)}%
+                </span>
+              </div>
+            )}
+            {alert && (
+              <div className="mt-2 p-2 bg-yellow-500/20 border border-yellow-500 rounded text-center text-sm font-bold">
+                {alert}
+              </div>
+            )}
+          </div>
+        </AnalysisCard>
+      );
+    }
+
     // ---------- main App ----------
     function Index() {
       // Theme state: 'dark', 'light', or 'system'
@@ -1270,6 +1318,9 @@
                   minCount={minCount}
                   setMinCount={setMinCount}
                 />
+
+                {/* NEW: Even/Odd Momentum Shift Detector */}
+                <EvenOddMomentum evenOdd={evenOdd} />
 
                 <AnalysisCard title="Recent Digits" subtitle="Last 50 ticks (newest first) — Yellow ring indicates consecutive same digit">
                   <div className="flex flex-wrap gap-1.5">
