@@ -941,49 +941,76 @@
       );
     }
 
-    // ---------- NEW: Even/Odd Momentum Shift Detector ----------
-    function EvenOddMomentum({ evenOdd }) {
-      const prevEvenRef = useRef(null);
-      const currentEven = evenOdd.evenPercentage;
-      const threshold = 3; // percentage points
+    // ---------- Even/Odd Momentum Scanner ----------
+    function EvenOddMomentum({ frequency1000 }) {
+      const [history, setHistory] = useState([]);
+      const THRESHOLD = 3.0; // percentage points
+      const WINDOW_SIZE = 10; // number of ticks to compare
 
-      let delta = null;
-      let direction = null;
-      let alert = null;
+      // Compute current even percentage from frequency1000
+      const evenPercentage = useMemo(() => {
+        if (!frequency1000 || frequency1000.length === 0) return 0;
+        const evenDigits = [0,2,4,6,8];
+        let sum = 0;
+        evenDigits.forEach(d => {
+          const found = frequency1000.find(f => f.digit === d);
+          if (found) sum += found.percentage;
+        });
+        return sum;
+      }, [frequency1000]);
 
-      if (prevEvenRef.current !== null) {
-        delta = currentEven - prevEvenRef.current;
-        if (Math.abs(delta) >= threshold) {
-          direction = delta > 0 ? 'Even' : 'Odd';
-          alert = `⚡ ${direction} gaining momentum (Δ = ${delta > 0 ? '+' : ''}${delta.toFixed(1)}%) – possible reversal to ${direction}`;
-        }
-      }
-
-      // Update ref after render
+      // Update history when evenPercentage changes
       useEffect(() => {
-        prevEvenRef.current = currentEven;
-      });
+        setHistory(prev => {
+          const newHistory = [...prev, evenPercentage];
+          if (newHistory.length > WINDOW_SIZE) {
+            newHistory.shift();
+          }
+          return newHistory;
+        });
+      }, [evenPercentage]);
+
+      // Calculate change from oldest to newest
+      const delta = useMemo(() => {
+        if (history.length < WINDOW_SIZE) return null;
+        const oldest = history[0];
+        const newest = history[history.length - 1];
+        return newest - oldest;
+      }, [history]);
+
+      const signal = useMemo(() => {
+        if (delta === null || Math.abs(delta) < THRESHOLD) return null;
+        if (delta > 0) {
+          return { direction: 'even', message: `📈 Even gaining momentum (+${delta.toFixed(1)}% over last ${WINDOW_SIZE} ticks) – Possible shift to EVEN` };
+        } else {
+          return { direction: 'odd', message: `📉 Odd gaining momentum (${delta.toFixed(1)}% over last ${WINDOW_SIZE} ticks) – Possible shift to ODD` };
+        }
+      }, [delta]);
+
+      const borderColor = signal?.direction === 'even' ? 'border-profit' : signal?.direction === 'odd' ? 'border-loss' : 'border-border';
 
       return (
-        <AnalysisCard title="📈 Even/Odd Momentum Shift" subtitle="Detects significant percentage changes (threshold 1.5%)">
+        <AnalysisCard title="⚡ Even/Odd Momentum" subtitle={`Tracks even % change over last ${WINDOW_SIZE} ticks (threshold ${THRESHOLD}%)`}>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Current Even:</span>
-              <span className="font-mono text-profit">{currentEven.toFixed(1)}%</span>
+              <span className="text-muted-foreground">Current Even %:</span>
+              <span className="font-mono">{evenPercentage.toFixed(1)}%</span>
             </div>
             {delta !== null && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Change from previous:</span>
-                <span className={`font-mono ${delta >= 0 ? 'text-profit' : 'text-loss'}`}>
+                <span className="text-muted-foreground">Change (last {WINDOW_SIZE} ticks):</span>
+                <span className={`font-mono ${delta > 0 ? 'text-profit' : 'text-loss'}`}>
                   {delta > 0 ? '+' : ''}{delta.toFixed(1)}%
                 </span>
               </div>
             )}
-            {alert && (
-              <div className="mt-2 p-2 bg-yellow-500/20 border border-yellow-500 rounded text-center text-sm font-bold">
-                {alert}
-              </div>
-            )}
+            <div className={`mt-2 p-3 rounded-lg border-2 text-center ${borderColor} ${signal ? (signal.direction === 'even' ? 'bg-profit/10' : 'bg-loss/10') : 'bg-secondary/50'}`}>
+              {signal ? (
+                <span className="font-bold">{signal.message}</span>
+              ) : (
+                <span className="text-muted-foreground">No significant momentum (|Δ| &lt; {THRESHOLD}%)</span>
+              )}
+            </div>
           </div>
         </AnalysisCard>
       );
@@ -1319,8 +1346,8 @@
                   setMinCount={setMinCount}
                 />
 
-                {/* NEW: Even/Odd Momentum Shift Detector */}
-                <EvenOddMomentum evenOdd={evenOdd} />
+                {/* Even/Odd Momentum Scanner */}
+                <EvenOddMomentum frequency1000={frequency1000} />
 
                 <AnalysisCard title="Recent Digits" subtitle="Last 50 ticks (newest first) — Yellow ring indicates consecutive same digit">
                   <div className="flex flex-wrap gap-1.5">
