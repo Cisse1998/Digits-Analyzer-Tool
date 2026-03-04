@@ -510,6 +510,9 @@
 
     // ---------- Even/Odd Signal Scanner (last 1000 ticks) with configurable threshold and min count ----------
     function EvenOddSignalScanner({ digits, threshold, setThreshold, minCount, setMinCount }) {
+      // New state for operator: '≥' or '≤'
+      const [operator, setOperator] = useState('≥');
+
       const W = 1000;
       const len = digits.length;
       const recentDigits = len <= W ? digits : digits.slice(len - W);
@@ -520,8 +523,12 @@
       const evenDigits = [0,2,4,6,8];
       const oddDigits = [1,3,5,7,9];
 
-      const evenAboveThreshold = evenDigits.filter(d => percentages[d] >= threshold).length;
-      const oddAboveThreshold = oddDigits.filter(d => percentages[d] >= threshold).length;
+      const evenAboveThreshold = evenDigits.filter(d => 
+        operator === '≥' ? percentages[d] >= threshold : percentages[d] <= threshold
+      ).length;
+      const oddAboveThreshold = oddDigits.filter(d => 
+        operator === '≥' ? percentages[d] >= threshold : percentages[d] <= threshold
+      ).length;
 
       const signal = useMemo(() => {
         if (evenAboveThreshold >= minCount && oddAboveThreshold >= minCount) {
@@ -538,7 +545,6 @@
 
       return (
         <AnalysisCard title="🎯 Even/Odd Signal Scanner" subtitle="Controls just below Even/Odd card">
-          {/* Controls moved here */}
           <div className="flex flex-wrap items-center gap-4 mb-4 pb-2 border-b border-border">
             <div className="flex items-center gap-2">
               <label className="text-xs text-muted-foreground">Threshold %:</label>
@@ -551,6 +557,17 @@
                 max="100"
                 className="bg-secondary border border-border rounded px-2 py-1 text-sm font-mono text-foreground w-20 focus:outline-none focus:ring-1 focus:ring-primary"
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">Operator:</label>
+              <select
+                value={operator}
+                onChange={(e) => setOperator(e.target.value)}
+                className="bg-secondary border border-border rounded px-2 py-1 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="≥">≥ (greater or equal)</option>
+                <option value="≤">≤ (less or equal)</option>
+              </select>
             </div>
             <div className="flex items-center gap-2">
               <label className="text-xs text-muted-foreground">Min digits:</label>
@@ -577,7 +594,7 @@
               </div>
             )}
             <div className="mt-2 text-xs text-muted-foreground text-center">
-              Even digits <{threshold.toFixed(1)}%: {evenAboveThreshold} | Odd digits <{threshold.toFixed(1)}%: {oddAboveThreshold}
+              Even digits {operator} {threshold.toFixed(1)}%: {evenAboveThreshold} | Odd digits {operator} {threshold.toFixed(1)}%: {oddAboveThreshold}
             </div>
           </div>
         </AnalysisCard>
