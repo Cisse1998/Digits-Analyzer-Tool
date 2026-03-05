@@ -508,9 +508,8 @@
       );
     }
 
-    // ---------- Even/Odd Signal Scanner (last 1000 ticks) with configurable threshold and min count ----------
+    // ---------- Even/Odd Signal Scanner (last 1000 ticks) with configurable threshold, min count, and top‑two parity condition ----------
     function EvenOddSignalScanner({ digits, threshold, setThreshold, minCount, setMinCount }) {
-      // New state for operator: '≥' or '≤'
       const [operator, setOperator] = useState('≥');
 
       const W = 1000;
@@ -519,6 +518,11 @@
       const counts = Array(10).fill(0);
       recentDigits.forEach(d => counts[d]++);
       const percentages = counts.map(c => (c / recentDigits.length) * 100);
+
+      // Find top two digits by percentage
+      const digitEntries = percentages.map((p, digit) => ({ digit, percentage: p }));
+      const sorted = [...digitEntries].sort((a, b) => b.percentage - a.percentage);
+      const topTwo = sorted.slice(0, 2).map(entry => entry.digit);
 
       const evenDigits = [0,2,4,6,8];
       const oddDigits = [1,3,5,7,9];
@@ -530,21 +534,26 @@
         operator === '≥' ? percentages[d] >= threshold : percentages[d] <= threshold
       ).length;
 
+      // Check top‑two parity
+      const topTwoEven = topTwo.every(d => d % 2 === 0);
+      const topTwoOdd = topTwo.every(d => d % 2 === 1);
+
       const signal = useMemo(() => {
+        // BOTH condition remains as before (can be triggered even if top two are mixed)
         if (evenAboveThreshold >= minCount && oddAboveThreshold >= minCount) {
           return { type: 'BOTH OR IGNORE', message: 'TRADE BOTH OR IGNORE' };
-        } else if (evenAboveThreshold >= minCount) {
+        } else if (evenAboveThreshold >= minCount && topTwoEven) {
           return { type: 'EVEN', message: 'TRADE EVEN' };
-        } else if (oddAboveThreshold >= minCount) {
+        } else if (oddAboveThreshold >= minCount && topTwoOdd) {
           return { type: 'ODD', message: 'TRADE ODD' };
         }
         return null;
-      }, [evenAboveThreshold, oddAboveThreshold, minCount]);
+      }, [evenAboveThreshold, oddAboveThreshold, minCount, topTwoEven, topTwoOdd]);
 
       const borderColor = signal?.type === 'EVEN' ? 'border-profit' : signal?.type === 'ODD' ? 'border-loss' : signal?.type === 'BOTH' ? 'border-accent' : 'border-border';
 
       return (
-        <AnalysisCard title="🎯 Even/Odd Signal Scanner" subtitle="Controls just below Even/Odd card">
+        <AnalysisCard title="🎯 Even/Odd Signal Scanner" subtitle="Top two digits must both be the same parity">
           <div className="flex flex-wrap items-center gap-4 mb-4 pb-2 border-b border-border">
             <div className="flex items-center gap-2">
               <label className="text-xs text-muted-foreground">Threshold %:</label>
@@ -596,6 +605,9 @@
             <div className="mt-2 text-xs text-muted-foreground text-center">
               Even digits {operator} {threshold.toFixed(1)}%: {evenAboveThreshold} | Odd digits {operator} {threshold.toFixed(1)}%: {oddAboveThreshold}
             </div>
+            <div className="mt-1 text-xs text-muted-foreground text-center">
+              Top two digits: {topTwo[0]} & {topTwo[1]} {topTwoEven ? '(both even)' : topTwoOdd ? '(both odd)' : '(mixed)'}
+            </div>
           </div>
         </AnalysisCard>
       );
@@ -605,12 +617,10 @@
     function TopDigitsDisplay({ frequency }) {
       if (!frequency || frequency.length === 0) return null;
 
-      // Sort by percentage descending
       const sorted = [...frequency].sort((a, b) => b.percentage - a.percentage);
       const highest = sorted[0];
       const secondHighest = sorted[1];
 
-      // Helper to get background color based on digit parity
       const getBgClass = (digit) => digit % 2 === 0 ? "bg-profit/15" : "bg-loss/15";
       const getTextClass = (digit) => digit % 2 === 0 ? "text-profit" : "text-loss";
 
@@ -776,21 +786,12 @@
       recentDigits.forEach(d => counts[d]++);
       const windowSize = recentDigits.length;
 
-      // Probabilities for each digit
       const P = counts.map(c => c / windowSize);
-
-      // Sum for ranges 0-4 and 5-9
       const P04 = P.slice(0, 5).reduce((a, b) => a + b, 0);
       const P59 = P.slice(5, 10).reduce((a, b) => a + b, 0);
-
-      // Expected counts in next 30s
       const E04 = P04 * N;
       const E59 = P59 * N;
-
-      // Dominance D = |P04 - 0.5|
       const D = Math.abs(P04 - 0.5);
-
-      // Determine signal with 1.2% threshold
       const threshold = 0.012;
       const hasSignal = D >= threshold;
 
@@ -857,7 +858,6 @@
         const len = digits.length;
         if (len < 100) return null; // need at least 100 ticks for micro window
 
-        // Helper to get counts for a window size
         const getCounts = (windowSize) => {
           const start = Math.max(0, len - windowSize);
           const slice = digits.slice(start, len);
@@ -874,13 +874,11 @@
         const total500 = Math.min(500, len);
         const total1000 = Math.min(1000, len);
 
-        // Weighted frequency score per digit
         const weighted = Array(10).fill(0);
         for (let i = 0; i < 10; i++) {
           weighted[i] = 0.5 * (counts100[i] / total100) + 0.3 * (counts500[i] / total500) + 0.2 * (counts1000[i] / total1000);
         }
 
-        // Entropy using last 1000 ticks
         const p = counts1000.map(c => c / total1000);
         let entropy = 0;
         for (let i = 0; i < 10; i++) {
@@ -888,7 +886,6 @@
         }
         const entropyOk = entropy < 2.25;
 
-        // Transition matrix from last 1000 ticks
         const transition = Array(10).fill(null).map(() => Array(10).fill(0));
         const transCounts = Array(10).fill(null).map(() => Array(10).fill(0));
         const startIdx = Math.max(0, len - 1000);
@@ -903,20 +900,16 @@
             for (let to = 0; to < 10; to++) {
               transition[from][to] = transCounts[from][to] / totalFrom;
             }
-          } else {
-            // if no transitions, assume uniform? But we'll just keep zeros.
           }
         }
 
-        // Final score = weighted * transition from last digit
         const finalScore = Array(10).fill(0);
         if (lastDigit !== null) {
           const trans = transition[lastDigit];
           for (let j = 0; j < 10; j++) {
-            finalScore[j] = weighted[j] * (trans[j] || 0); // if no transition, zero
+            finalScore[j] = weighted[j] * (trans[j] || 0);
           }
         } else {
-          // fallback to weighted only
           for (let j = 0; j < 10; j++) {
             finalScore[j] = weighted[j];
           }
@@ -927,12 +920,9 @@
         const confidence = maxScore - meanScore;
         const confidenceOk = confidence >= 0.04;
 
-        // Determine best contract
         let tradeType = 'WAIT';
         let target = null;
         if (entropyOk && confidenceOk) {
-          // Check conditions in order
-          // 1. Any digit > 18% in weighted frequency?
           for (let i = 0; i < 10; i++) {
             if (weighted[i] > 0.18) {
               tradeType = `Match Digit ${i}`;
@@ -941,19 +931,14 @@
             }
           }
           if (tradeType === 'WAIT') {
-            // 2. Even sum > 55%
             const evenSum = weighted[0] + weighted[2] + weighted[4] + weighted[6] + weighted[8];
             if (evenSum > 0.55) {
               tradeType = 'Even';
-            }
-            // 3. Odd sum > 55%
-            else {
+            } else {
               const oddSum = weighted[1] + weighted[3] + weighted[5] + weighted[7] + weighted[9];
               if (oddSum > 0.55) {
                 tradeType = 'Odd';
-              }
-              else {
-                // 4. Max digit in 0-4
+              } else {
                 const maxDigit = finalScore.indexOf(maxScore);
                 if (maxDigit <= 4) {
                   tradeType = 'Digit Under 5';
@@ -1018,14 +1003,21 @@
 
     // ---------- main App ----------
     function Index() {
-      // Theme state: 'dark', 'light', or 'system'
-      const [theme, setTheme] = useState(() => {
-        // Check localStorage or default to 'system'
-        const saved = localStorage.getItem('theme');
-        return saved ? saved : 'system';
-      });
+      const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
+      const [maxTicks, setMaxTicks] = useState(1000);
+      const [inputValue, setInputValue] = useState("1000");
+      const [digits, setDigits] = useState([]);
+      const [prices, setPrices] = useState([]);
+      const [symbol, setSymbol] = useState("R_100");
+      const [isLive, setIsLive] = useState(false);
+      const [lastPrice, setLastPrice] = useState(null);
+      const [decimalPlaces, setDecimalPlaces] = useState(3);
+      const connectionRef = useRef(null);
+      const [threshold, setThreshold] = useState(10.2);
+      const [minCount, setMinCount] = useState(3);
+      const [freqHistory, setFreqHistory] = useState([]);
+      const lastSnapshotLength = useRef(0);
 
-      // Apply theme to body class
       useEffect(() => {
         const applyTheme = (mode) => {
           const body = document.body;
@@ -1043,10 +1035,7 @@
           }
           localStorage.setItem('theme', mode);
         };
-
         applyTheme(theme);
-
-        // Listen for system theme changes if theme is 'system'
         if (theme === 'system') {
           const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
           const handler = (e) => {
@@ -1060,23 +1049,6 @@
           return () => mediaQuery.removeEventListener('change', handler);
         }
       }, [theme]);
-
-      const [maxTicks, setMaxTicks] = useState(1000);
-      const [inputValue, setInputValue] = useState("1000");
-      const [digits, setDigits] = useState([]);
-      const [prices, setPrices] = useState([]);
-      const [symbol, setSymbol] = useState("R_100");
-      const [isLive, setIsLive] = useState(false);
-      const [lastPrice, setLastPrice] = useState(null);
-      const [decimalPlaces, setDecimalPlaces] = useState(3);
-      const connectionRef = useRef(null);
-
-      // Configurable parameters for Even/Odd scanner
-      const [threshold, setThreshold] = useState(10.2);
-      const [minCount, setMinCount] = useState(3);
-
-      const [freqHistory, setFreqHistory] = useState([]);
-      const lastSnapshotLength = useRef(0);
 
       useEffect(() => {
         let active = true;
@@ -1191,13 +1163,11 @@
 
       const windowSizeDisplay = digits.length < 1000 ? digits.length : 1000;
 
-      // Determine highest and lowest percentages for circles
       const percentages = frequency1000.map(f => f.percentage);
       const maxPct = percentages.length ? Math.max(...percentages) : 0;
       const minPct = percentages.length ? Math.min(...percentages) : 0;
       const hasRange = maxPct > minPct;
 
-      // Split digits into two groups
       const upperDigits = frequency1000.filter(f => f.digit <= 4);
       const lowerDigits = frequency1000.filter(f => f.digit >= 5);
 
@@ -1229,21 +1199,14 @@
                 <label className="text-sm text-muted-foreground">Max ticks:</label>
                 <input type="number" value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={e => e.key === "Enter" && handleMaxTicksChange()} onBlur={handleMaxTicksChange} min={10} max={50000} className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-mono text-foreground w-24 focus:outline-none focus:ring-1 focus:ring-primary" />
               </div>
-
-              {/* Theme selector */}
               <div className="flex items-center gap-2">
                 <label className="text-sm text-muted-foreground">Theme:</label>
-                <select
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value)}
-                  className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                >
+                <select value={theme} onChange={e => setTheme(e.target.value)} className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary">
                   <option value="dark">Dark</option>
                   <option value="light">Light</option>
                   <option value="system">System</option>
                 </select>
               </div>
-
               <div className="flex gap-2 ml-auto">
                 {!isLive ? <button onClick={startStream} className="bg-primary text-primary-foreground px-5 py-1.5 rounded text-sm font-semibold hover:opacity-90 transition-opacity">▶ Start Live</button> :
                 <button onClick={stopStream} className="bg-destructive text-destructive-foreground px-5 py-1.5 rounded text-sm font-semibold hover:opacity-90 transition-opacity">■ Stop</button>}
@@ -1261,46 +1224,24 @@
               <>
                 <AnalysisCard title="Digit Frequency" subtitle={`${selectedLabel} — last ${windowSizeDisplay} ticks (expected 10.0% each)`}>
                   <div className="flex flex-col items-center space-y-4">
-                    {/* Upper row: digits 0-4 */}
                     <div className="flex justify-center flex-wrap gap-2">
-                      {upperDigits.map((f) => (
-                        <DigitCircle
-                          key={f.digit}
-                          digit={f.digit}
-                          percentage={f.percentage}
-                          isHighest={hasRange && f.percentage === maxPct}
-                          isLowest={hasRange && f.percentage === minPct}
-                          isCurrent={currentDigit === f.digit}
-                        />
+                      {upperDigits.map(f => (
+                        <DigitCircle key={f.digit} digit={f.digit} percentage={f.percentage} isHighest={hasRange && f.percentage === maxPct} isLowest={hasRange && f.percentage === minPct} isCurrent={currentDigit === f.digit} />
                       ))}
                     </div>
-                    {/* Lower row: digits 5-9 */}
                     <div className="flex justify-center flex-wrap gap-2">
-                      {lowerDigits.map((f) => (
-                        <DigitCircle
-                          key={f.digit}
-                          digit={f.digit}
-                          percentage={f.percentage}
-                          isHighest={hasRange && f.percentage === maxPct}
-                          isLowest={hasRange && f.percentage === minPct}
-                          isCurrent={currentDigit === f.digit}
-                        />
+                      {lowerDigits.map(f => (
+                        <DigitCircle key={f.digit} digit={f.digit} percentage={f.percentage} isHighest={hasRange && f.percentage === maxPct} isLowest={hasRange && f.percentage === minPct} isCurrent={currentDigit === f.digit} />
                       ))}
                     </div>
                   </div>
                 </AnalysisCard>
 
-                {/* Range Dominance Scanner with 1.2% threshold */}
                 <RangeDominanceScanner digits={digits} />
-
-                {/* AI Prediction Card */}
                 <AIPrediction digits={digits} />
-
                 <SuggestionCard frequency={frequency1000} />
-
                 <SignalScanner digits={digits} lastDigit={currentDigit} />
 
-                {/* Large last digit display with dynamic color based on streak */}
                 <div className="text-6xl md:text-7xl font-bold text-center py-4 border border-profit/30 rounded-lg bg-profit/5">
                   <span className={getStreakColor(currentStreak)}>
                     {lastPrice ? getLastDigitFromPrice(lastPrice) : '--'}
@@ -1311,33 +1252,20 @@
                 </div>
 
                 <RiseFallCard data={riseFall} />
-
                 <RecentMovements prices={prices} />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <AnalysisCard 
-                    title="Over / Under" 
-                    subtitle={`Probability per digit barrier — Current price: ${lastPrice ? lastPrice : '--'}`}
-                  >
+                  <AnalysisCard title="Over / Under" subtitle={`Probability per digit barrier — Current price: ${lastPrice ? lastPrice : '--'}`}>
                     <OverUnderTable data={overUnder} />
                   </AnalysisCard>
-
-                  <AnalysisCard 
-                    title="Matches / Differs" 
-                    subtitle={`Match & differ probability per digit — Current price: ${lastPrice ? lastPrice : '--'}`}
-                  >
+                  <AnalysisCard title="Matches / Differs" subtitle={`Match & differ probability per digit — Current price: ${lastPrice ? lastPrice : '--'}`}>
                     <MatchDifferTable data={matchDiffer} />
                   </AnalysisCard>
-
-                  <AnalysisCard 
-                    title="Even / Odd" 
-                    subtitle={`Even vs odd distribution — Current price: ${lastPrice ? lastPrice : '--'}`}
-                  >
+                  <AnalysisCard title="Even / Odd" subtitle={`Even vs odd distribution — Current price: ${lastPrice ? lastPrice : '--'}`}>
                     <EvenOddDisplay data={evenOdd} />
                   </AnalysisCard>
                 </div>
 
-                {/* Even/Odd Signal Scanner with controls inside, placed right after the Even/Odd card */}
                 <EvenOddSignalScanner
                   digits={digits}
                   threshold={threshold}
@@ -1346,7 +1274,6 @@
                   setMinCount={setMinCount}
                 />
 
-                {/* Top Digits Display – added below Even/Odd Signal Scanner */}
                 <TopDigitsDisplay frequency={frequency1000} />
 
                 <AnalysisCard title="Recent Digits" subtitle="Last 50 ticks (newest first) — Yellow ring indicates consecutive same digit">
